@@ -50,79 +50,71 @@ func main() {
 	v2Enbaled := client.String(context.TODO(), "v2_enabled", "provided_default", openfeature.EvaluationContext{})
 	fmt.Println("early v2_enabled:", v2Enbaled)
 
-	go func() {
-		time.Sleep(1 * time.Second)
-		mongoClient, err := mongo.Connect(options.Client().ApplyURI(os.Getenv("MONGODB_ENDPOINT")))
-		if err != nil {
-			log.Fatal("connecting to MongoDB: ", err)
-		}
+	flagDefinition := flag.Definition{
+		FlagName:       "v2_enabled",
+		DefaultValue:   "false",
+		DefaultVariant: "database_default",
+		Rules: []rule.ConcreteRule{
+			{ExactMatchRule: &rule.ExactMatchRule{
+				Key:       "user_id",
+				VariantID: "exact-rule",
+				KeyValue:  "12345",
+				ValueData: "database_default_2",
+			}},
+			{RegexRule: &rule.RegexRule{
+				Key:           "user_id",
+				VariantID:     "regex-rule",
+				RegexpPattern: "^[0-9]{3}$",
+				ValueData:     "regex_default",
+			}},
+			{ExistsRule: &rule.ExistsRule{
+				Key:       "unique_user_id",
+				VariantID: "exists-rule",
+				ValueData: "exists_default",
+			}},
+			{FractionalRule: &rule.FractionalRule{
+				Key:        "user_id",
+				VariantID:  "fractional-rule",
+				Percentage: 1.0,
+				ValueData:  "fractional_default_small",
+			}},
+			{FractionalRule: &rule.FractionalRule{
+				Key:        "user_id",
+				VariantID:  "fractional-rule",
+				Percentage: 99.0,
+				ValueData:  "fractional_default_large",
+			}},
+			{AndRule: &rule.AndRule{
+				Rules: []rule.ConcreteRule{
+					{ExistsRule: &rule.ExistsRule{
+						Key: "unique_id_thing",
+					}},
+					{ExistsRule: &rule.ExistsRule{
+						Key: "other_unique_id_thing",
+					}},
+				},
+				ValueData: "and_default",
+			}},
+		},
+	}
 
-		flagDefinition := flag.Definition{
-			FlagName:       "v2_enabled",
-			DefaultValue:   "false",
-			DefaultVariant: "database_default",
-			Rules: []rule.ConcreteRule{
-				{ExactMatchRule: &rule.ExactMatchRule{
-					Key:       "user_id",
-					VariantID: "exact-rule",
-					KeyValue:  "12345",
-					ValueData: "database_default_2",
-				}},
-				{RegexRule: &rule.RegexRule{
-					Key:           "user_id",
-					VariantID:     "regex-rule",
-					RegexpPattern: "^[0-9]{3}$",
-					ValueData:     "regex_default",
-				}},
-				{ExistsRule: &rule.ExistsRule{
-					Key:       "unique_user_id",
-					VariantID: "exists-rule",
-					ValueData: "exists_default",
-				}},
-				{FractionalRule: &rule.FractionalRule{
-					Key:        "user_id",
-					VariantID:  "fractional-rule",
-					Percentage: 1.0,
-					ValueData:  "fractional_default_small",
-				}},
-				{FractionalRule: &rule.FractionalRule{
-					Key:        "user_id",
-					VariantID:  "fractional-rule",
-					Percentage: 99.0,
-					ValueData:  "fractional_default_large",
-				}},
-				{AndRule: &rule.AndRule{
-					Rules: []rule.ConcreteRule{
-						{ExistsRule: &rule.ExistsRule{
-							Key: "unique_id_thing",
-						}},
-						{ExistsRule: &rule.ExistsRule{
-							Key: "other_unique_id_thing",
-						}},
-					},
-					ValueData: "and_default",
-				}},
-			},
-		}
+	document := map[string]flag.Definition{
+		"v2_enabled": flagDefinition,
+	}
 
-		document := map[string]flag.Definition{
-			"v2_enabled": flagDefinition,
-		}
-
-		fmt.Println("Updating the feature flags")
-		result, err := mongoClient.Database(database).Collection(collection).UpdateByID(
-			context.TODO(),
-			documentID,
-			bson.M{
-				"$set": document,
-			},
-			options.UpdateOne().SetUpsert(true),
-		)
-		if err != nil {
-			log.Fatal("updating feature flags: ", err)
-		}
-		fmt.Println("Update result:", result)
-	}()
+	fmt.Println("Updating the feature flags")
+	result, err := mongoClient.Database(database).Collection(collection).UpdateByID(
+		context.TODO(),
+		documentID,
+		bson.M{
+			"$set": document,
+		},
+		options.UpdateOne().SetUpsert(true),
+	)
+	if err != nil {
+		log.Fatal("updating feature flags: ", err)
+	}
+	fmt.Println("Update result:", result)
 
 	time.Sleep(10 * time.Second)
 
