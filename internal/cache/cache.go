@@ -51,6 +51,19 @@ func (c *Cache) Set(flagKey string, definition any) error {
 	return nil
 }
 
+func (c *Cache) SetAll(definitions map[string]flag.Definition) error {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	for flagKey, definition := range definitions {
+		if err := c.Set(flagKey, definition); err != nil {
+			return fmt.Errorf("setting flag %s: %w", flagKey, err)
+		}
+	}
+
+	return nil
+}
+
 func Evaluate[T any](cache *Cache, flatCtx openfeature.FlattenedContext, flag string, defaultValue T) (T, openfeature.ProviderResolutionDetail) {
 	cache.cacheMutex.RLock()
 	defer cache.cacheMutex.RUnlock()
