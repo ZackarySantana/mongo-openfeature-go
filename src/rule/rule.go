@@ -386,6 +386,9 @@ func (r *SemVerRule) Matches(ctx map[string]any) bool {
 	return c.Check(v)
 }
 
+func (r *SemVerRule) Value() any      { return r.ValueData }
+func (r *SemVerRule) Variant() string { return r.VariantID }
+
 // CronRule fires if a time falls within a recurring window. The window starts
 // at a time defined by the CronSpec and lasts for the specified Duration.
 //
