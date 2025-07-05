@@ -10,8 +10,8 @@ import (
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/zackarysantana/mongo-openfeature-go/internal/testutil"
 	"github.com/zackarysantana/mongo-openfeature-go/src/flag"
+	"github.com/zackarysantana/mongo-openfeature-go/src/mongoprovider"
 	"github.com/zackarysantana/mongo-openfeature-go/src/rule"
-	"github.com/zackarysantana/mongo-openfeature-go/src/singledocument"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -35,7 +35,7 @@ func main() {
 		log.Fatal("connecting to MongoDB: ", err)
 	}
 
-	provider, ofClient, err := singledocument.NewProvider(singledocument.NewOptions(mongoClient, database, collection, documentID))
+	provider, ofClient, err := mongoprovider.New(mongoprovider.NewOptions(mongoClient, database, collection, documentID))
 	if err != nil {
 		log.Fatal("creating SingleDocumentProvider: ", err)
 	}

@@ -1,4 +1,4 @@
-package singledocument
+package mongoprovider
 
 import (
 	"log/slog"
@@ -17,11 +17,13 @@ type Options struct {
 	Database string
 	// Collection is the name of the MongoDB collection to use.
 	Collection string
-	// DocumentID is the ID of the document to use for feature flags.
-	DocumentID string
 
 	// ===== Optional =====
 
+	// DocumentID is the ID of the document to use for feature flags.
+	// if none is provided, the provider will use the full collection
+	// to evaluate feature flags.
+	DocumentID string
 	// Logger is the logger to use for the provider.
 	// This is only used for logging service-fatal errors.
 	Logger *slog.Logger
@@ -57,9 +59,6 @@ func (opts *Options) Validate() error {
 	}
 	if opts.Collection == "" {
 		return mongoopenfeature.ErrMissingCollection
-	}
-	if opts.DocumentID == "" {
-		return mongoopenfeature.ErrMissingDocumentID
 	}
 
 	// Setting defaults

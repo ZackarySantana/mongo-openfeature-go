@@ -1,4 +1,4 @@
-package singledocument
+package mongoprovider
 
 import (
 	"context"
@@ -16,15 +16,14 @@ import (
 )
 
 const (
-	ProviderName = "MongoDBSingleDocumentFeatureProvider"
+	ProviderName = "MongoDBFeatureProvider"
 )
 
-var _ openfeature.FeatureProvider = (*SingleDocumentProvider)(nil)
-var _ openfeature.EventHandler = (*SingleDocumentProvider)(nil)
-var _ openfeature.StateHandler = (*SingleDocumentProvider)(nil)
+var _ openfeature.FeatureProvider = (*Provider)(nil)
+var _ openfeature.EventHandler = (*Provider)(nil)
+var _ openfeature.StateHandler = (*Provider)(nil)
 
-// The client's shutdown is expected to be handled by the caller.
-func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error) {
+func New(opts *Options) (*Provider, *client.Client, error) {
 	if err := opts.Validate(); err != nil {
 		return nil, nil, fmt.Errorf("validating options: %w", err)
 	}
@@ -53,7 +52,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 		return nil, nil, fmt.Errorf("creating mongo openfeature client: %w", err)
 	}
 
-	p := &SingleDocumentProvider{
+	p := &Provider{
 		EventHandler:   eventHandler,
 		StateHandler:   statehandler.New(),
 		CacheEvaluator: cache.NewEvaluator(cacheHandler),
@@ -87,7 +86,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 	return p, client, nil
 }
 
-type SingleDocumentProvider struct {
+type Provider struct {
 	*eventhandler.EventHandler
 	*statehandler.StateHandler
 	*cache.CacheEvaluator
@@ -96,10 +95,10 @@ type SingleDocumentProvider struct {
 	logger *slog.Logger
 }
 
-func (s *SingleDocumentProvider) Metadata() openfeature.Metadata {
+func (s *Provider) Metadata() openfeature.Metadata {
 	return openfeature.Metadata{Name: ProviderName}
 }
 
-func (s *SingleDocumentProvider) Hooks() []openfeature.Hook {
+func (s *Provider) Hooks() []openfeature.Hook {
 	return []openfeature.Hook{}
 }
