@@ -107,7 +107,7 @@ func (c *Client) getFlagSingleDocument(ctx context.Context, flagName string) (*f
 	err := c.collection.FindOne(ctx, bson.M{"_id": c.documentID}).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("document %s not found", c.documentID)
+			return nil, fmt.Errorf("document %s: %w", c.documentID, err)
 		}
 		return nil, fmt.Errorf("getting flag in document %s: %w", c.documentID, err)
 	}
@@ -201,7 +201,7 @@ func (c *Client) getAllFlagsSingleDocument(ctx context.Context) (map[string]flag
 	err := c.collection.FindOne(ctx, bson.M{"_id": c.documentID}).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("document %s not found", c.documentID)
+			return nil, fmt.Errorf("document %s: %w", c.documentID, err)
 		}
 		return nil, fmt.Errorf("getting all flags in document %s: %w", c.documentID, err)
 	}
