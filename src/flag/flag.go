@@ -5,10 +5,6 @@ import (
 	"github.com/zackarysantana/mongo-openfeature-go/src/rule"
 )
 
-// -----------------------------------------------------------------------------
-// FlagDefinition (non‐generic) with its own Evaluate
-// -----------------------------------------------------------------------------
-
 type Definition struct {
 	FlagName string
 
