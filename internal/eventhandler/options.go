@@ -14,6 +14,9 @@ var (
 type DroppedEventHandler func(event openfeature.Event)
 
 type Options struct {
+	// ===== Required =====
+
+	// DroppedEventHandler is the function to call when an event is dropped.
 	DroppedEventHandler DroppedEventHandler
 }
 
