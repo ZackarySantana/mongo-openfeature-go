@@ -33,6 +33,7 @@ type Options struct {
 	// events from the watch.
 	EventHandler *eventhandler.EventHandler
 	// Logger is the logger to use for the watch handler.
+	// This is only used for logging service-fatal errors.
 	Logger *slog.Logger
 	// DocumentID is the ID of the document to watch for changes.
 	// This is optional, and if not provided, the watch will

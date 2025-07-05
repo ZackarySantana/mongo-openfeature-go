@@ -31,6 +31,7 @@ type Options struct {
 	// ===== Optional =====
 
 	// Logger is the logger to use for the provider.
+	// This is only used for logging service-fatal errors.
 	Logger *slog.Logger
 }
 
