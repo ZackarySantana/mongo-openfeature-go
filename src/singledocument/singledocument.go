@@ -32,14 +32,11 @@ func NewSingleDocumentProvider(opts *SingleDocumentProviderOptions) (*SingleDocu
 	if err != nil {
 		return nil, fmt.Errorf("creating event handler: %w", err)
 	}
-	watchHandler, err := watchhandler.New(&watchhandler.Options{
-		Client:       opts.Client,
-		Database:     opts.Database,
-		Collection:   opts.Collection,
-		EventHandler: eventHandler,
-		Logger:       opts.Logger,
-		DocumentID:   opts.DocumentID,
-	})
+	watchHandler, err := watchhandler.New(watchhandler.NewOptions(opts.Client, opts.Database, opts.Collection).
+		WithEventHandler(eventHandler).
+		WithLogger(opts.Logger).
+		WithDocumentID(opts.DocumentID),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("creating watch handler: %w", err)
 	}

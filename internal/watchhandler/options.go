@@ -19,6 +19,7 @@ var (
 
 type Options struct {
 	// ===== Required =====
+
 	// Client is the MongoDB client to use for the watch handler.
 	Client *mongo.Client
 	// Database is the name of the MongoDB database to use.
@@ -27,12 +28,11 @@ type Options struct {
 	Collection string
 
 	// ===== Optional ======
+
 	// EventHandler is the event handler to use for processing
 	// events from the watch.
 	EventHandler *eventhandler.EventHandler
-	// Logger is a supplementary logger to use for logging events
-	// and errors. If not provided, the watch handler will log
-	// events to slog.Default().
+	// Logger is the logger to use for the watch handler.
 	Logger *slog.Logger
 	// DocumentID is the ID of the document to watch for changes.
 	// This is optional, and if not provided, the watch will
@@ -44,6 +44,54 @@ type Options struct {
 	// ParentContext is the parent context to use for the watch handler.
 	// If not provided, it defaults to context.Background().
 	ParentContext context.Context
+}
+
+func NewOptions(client *mongo.Client, database, collection string) *Options {
+	return &Options{
+		Client:     client,
+		Database:   database,
+		Collection: collection,
+	}
+}
+
+func (opts *Options) WithEventHandler(eventHandler *eventhandler.EventHandler) *Options {
+	if opts == nil {
+		opts = &Options{}
+	}
+	opts.EventHandler = eventHandler
+	return opts
+}
+
+func (opts *Options) WithLogger(logger *slog.Logger) *Options {
+	if opts == nil {
+		opts = &Options{}
+	}
+	opts.Logger = logger
+	return opts
+}
+
+func (opts *Options) WithDocumentID(documentID string) *Options {
+	if opts == nil {
+		opts = &Options{}
+	}
+	opts.DocumentID = documentID
+	return opts
+}
+
+func (opts *Options) WithMaxTries(maxTries int) *Options {
+	if opts == nil {
+		opts = &Options{}
+	}
+	opts.MaxTries = maxTries
+	return opts
+}
+
+func (opts *Options) WithParentContext(ctx context.Context) *Options {
+	if opts == nil {
+		opts = &Options{}
+	}
+	opts.ParentContext = ctx
+	return opts
 }
 
 func (opts *Options) Validate() error {
