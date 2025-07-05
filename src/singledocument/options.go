@@ -15,7 +15,7 @@ var (
 	ErrMissingDocumentID = errors.New("missing document ID")
 )
 
-type SingleDocumentProviderOptions struct {
+type Options struct {
 	// ===== Required =====
 
 	// Client is the MongoDB client to use for the provider.
@@ -34,8 +34,8 @@ type SingleDocumentProviderOptions struct {
 	Logger *slog.Logger
 }
 
-func NewOptions(client *mongo.Client, database, collection, documentID string) *SingleDocumentProviderOptions {
-	return &SingleDocumentProviderOptions{
+func NewOptions(client *mongo.Client, database, collection, documentID string) *Options {
+	return &Options{
 		Client:     client,
 		Database:   database,
 		Collection: collection,
@@ -43,15 +43,15 @@ func NewOptions(client *mongo.Client, database, collection, documentID string) *
 	}
 }
 
-func (opts *SingleDocumentProviderOptions) WithLogger(logger *slog.Logger) *SingleDocumentProviderOptions {
+func (opts *Options) WithLogger(logger *slog.Logger) *Options {
 	if opts == nil {
-		opts = &SingleDocumentProviderOptions{}
+		opts = &Options{}
 	}
 	opts.Logger = logger
 	return opts
 }
 
-func (opts *SingleDocumentProviderOptions) Validate() error {
+func (opts *Options) Validate() error {
 	if opts == nil {
 		return ErrNilOptions
 	}
