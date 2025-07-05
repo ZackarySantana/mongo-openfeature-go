@@ -1,14 +1,8 @@
 package eventhandler
 
 import (
-	"errors"
-
 	"github.com/open-feature/go-sdk/openfeature"
-)
-
-var (
-	ErrNilOptions             = errors.New("options cannot be nil")
-	ErrNilDroppedEventHandler = errors.New("missing dropped event handler")
+	mongoopenfeature "github.com/zackarysantana/mongo-openfeature-go/src"
 )
 
 type DroppedEventHandler func(event openfeature.Event)
@@ -28,10 +22,10 @@ func NewOptions(droppedEventHandler DroppedEventHandler) *Options {
 
 func (opts *Options) Validate() error {
 	if opts == nil {
-		return ErrNilOptions
+		return mongoopenfeature.ErrNilOptions
 	}
 	if opts.DroppedEventHandler == nil {
-		return ErrNilDroppedEventHandler
+		return mongoopenfeature.ErrNilDroppedEventHandler
 	}
 	return nil
 }

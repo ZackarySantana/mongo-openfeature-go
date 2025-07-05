@@ -2,19 +2,11 @@ package watchhandler
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 
 	"github.com/zackarysantana/mongo-openfeature-go/internal/eventhandler"
+	mongoopenfeature "github.com/zackarysantana/mongo-openfeature-go/src"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-)
-
-var (
-	ErrNilOptions        = errors.New("options cannot be nil")
-	ErrMissingClient     = errors.New("missing mongo client")
-	ErrMissingDatabase   = errors.New("missing database name")
-	ErrMissingCollection = errors.New("missing collection name")
-	ErrMissingDocumentID = errors.New("missing document ID")
 )
 
 type Options struct {
@@ -97,17 +89,17 @@ func (opts *Options) WithParentContext(ctx context.Context) *Options {
 
 func (opts *Options) Validate() error {
 	if opts == nil {
-		return ErrNilOptions
+		return mongoopenfeature.ErrNilOptions
 	}
 	// Validating
 	if opts.Client == nil {
-		return ErrMissingClient
+		return mongoopenfeature.ErrMissingClient
 	}
 	if opts.Database == "" {
-		return ErrMissingDatabase
+		return mongoopenfeature.ErrMissingDatabase
 	}
 	if opts.Collection == "" {
-		return ErrMissingCollection
+		return mongoopenfeature.ErrMissingCollection
 	}
 
 	// Setting defaults
