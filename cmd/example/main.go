@@ -65,12 +65,46 @@ func main() {
 			FlagName:       "v2_enabled",
 			DefaultValue:   "false",
 			DefaultVariant: "database_default",
-			Rules: []rules.ConcreteRule{{
-				ExactMatchRule: &rules.ExactMatchRule{
+			Rules: []rules.ConcreteRule{
+				{ExactMatchRule: &rules.ExactMatchRule{
 					Key:       "user_id",
 					VariantID: "exact-rule",
 					KeyValue:  "12345",
 					ValueData: "database_default_2",
+				}},
+				{RegexRule: &rules.RegexRule{
+					Key:           "user_id",
+					VariantID:     "regex-rule",
+					RegexpPattern: "^[0-9]{3}$",
+					ValueData:     "regex_default",
+				}},
+				{ExistsRule: &rules.ExistsRule{
+					Key:       "unique_user_id",
+					VariantID: "exists-rule",
+					ValueData: "exists_default",
+				}},
+				{FractionalRule: &rules.FractionalRule{
+					Key:        "user_id",
+					VariantID:  "fractional-rule",
+					Percentage: 1.0,
+					ValueData:  "fractional_default_small",
+				}},
+				{FractionalRule: &rules.FractionalRule{
+					Key:        "user_id",
+					VariantID:  "fractional-rule",
+					Percentage: 99.0,
+					ValueData:  "fractional_default_large",
+				}},
+				{AndRule: &rules.AndRule{
+					Rules: []rules.ConcreteRule{
+						{ExistsRule: &rules.ExistsRule{
+							Key: "unique_id_thing",
+						}},
+						{ExistsRule: &rules.ExistsRule{
+							Key: "other_unique_id_thing",
+						}},
+					},
+					ValueData: "and_default",
 				}},
 			},
 		}
@@ -106,6 +140,27 @@ func main() {
 		"user_id": "12345",
 	}))
 	fmt.Println("v2_enabled with user2:", v2Enbaled)
+
+	v2Enbaled = client.String(context.TODO(), "v2_enabled", "second_static_default", openfeature.NewEvaluationContext("123", map[string]any{
+		"user_id": "123",
+	}))
+	fmt.Println("v2_enabled with user3:", v2Enbaled)
+
+	v2Enbaled = client.String(context.TODO(), "v2_enabled", "second_static_default", openfeature.NewEvaluationContext("something", map[string]any{
+		"unique_user_id": "something",
+	}))
+	fmt.Println("unique_user_id exists:", v2Enbaled)
+
+	v2Enbaled = client.String(context.TODO(), "v2_enabled", "second_static_default", openfeature.NewEvaluationContext("otherthing", map[string]any{
+		"user_id": "otherthing",
+	}))
+	fmt.Println("fractional chance: ", v2Enbaled)
+
+	v2Enbaled = client.String(context.TODO(), "v2_enabled", "second_static_default", openfeature.NewEvaluationContext("otherthing", map[string]any{
+		"unique_id_thing":       "otherthing",
+		"other_unique_id_thing": "otherthing",
+	}))
+	fmt.Println("and clause: ", v2Enbaled)
 
 	time.Sleep(100 * time.Second)
 }
