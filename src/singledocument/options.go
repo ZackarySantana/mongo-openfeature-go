@@ -15,9 +15,9 @@ var (
 	ErrMissingDocumentID = errors.New("missing document ID")
 )
 
-// TODO: Make a func-opts style constructor/builder for the provider.
 type SingleDocumentProviderOptions struct {
 	// ===== Required =====
+
 	// Client is the MongoDB client to use for the provider.
 	// This provider does not manage the lifecycle of the client.
 	Client *mongo.Client
@@ -29,7 +29,26 @@ type SingleDocumentProviderOptions struct {
 	DocumentID string
 
 	// ===== Optional =====
+
+	// Logger is the logger to use for the provider.
 	Logger *slog.Logger
+}
+
+func NewOptions(client *mongo.Client, database, collection, documentID string) *SingleDocumentProviderOptions {
+	return &SingleDocumentProviderOptions{
+		Client:     client,
+		Database:   database,
+		Collection: collection,
+		DocumentID: documentID,
+	}
+}
+
+func (opts *SingleDocumentProviderOptions) WithLogger(logger *slog.Logger) *SingleDocumentProviderOptions {
+	if opts == nil {
+		opts = &SingleDocumentProviderOptions{}
+	}
+	opts.Logger = logger
+	return opts
 }
 
 func (opts *SingleDocumentProviderOptions) Validate() error {

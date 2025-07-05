@@ -36,12 +36,7 @@ func main() {
 		log.Fatal("connecting to MongoDB: ", err)
 	}
 
-	provider, err := singledocument.NewSingleDocumentProvider(&singledocument.SingleDocumentProviderOptions{
-		Client:     mongoClient,
-		Database:   database,
-		Collection: collection,
-		DocumentID: documentID,
-	})
+	provider, err := singledocument.NewSingleDocumentProvider(singledocument.NewOptions(mongoClient, database, collection, documentID))
 	if err != nil {
 		log.Fatal("creating SingleDocumentProvider: ", err)
 	}
