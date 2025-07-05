@@ -275,34 +275,64 @@ func (r *IPRangeRule) Variant() string { return r.VariantID }
 // GeoFenceRule fires if two coordinates in ctx are within RadiusMeters
 // of the center (using a simple haversine).
 type GeoFenceRule struct {
-	LatKey, LngKey string
-	CenterLat      float64
-	CenterLng      float64
-	RadiusMeters   float64
-	VariantID      string
-	ValueData      any
+	LatKey, LngKey       string
+	LatCenter, LngCenter float64
+	RadiusMeters         float64
+
+	VariantID string
+	ValueData any
+}
+
+func degToRad(d float64) float64 {
+	return d * math.Pi / 180.0
 }
 
 func (r *GeoFenceRule) Matches(ctx map[string]any) bool {
-	latI, lok := ctx[r.LatKey]
-	lngI, gok := ctx[r.LngKey]
-	if !lok || !gok {
+	rawLat, okLat := ctx[r.LatKey]
+	rawLng, okLng := ctx[r.LngKey]
+	if !okLat || !okLng {
 		return false
 	}
-	lat, lok2 := latI.(float64)
-	lng, gok2 := lngI.(float64)
-	if !lok2 || !gok2 {
+
+	// Support int, float32, float64
+	var lat, lng float64
+	switch v := rawLat.(type) {
+	case int:
+		lat = float64(v)
+	case float32:
+		lat = float64(v)
+	case float64:
+		lat = v
+	default:
 		return false
 	}
-	// haversine:
-	const R = 6371000.0 // earth radius in meters
-	dLat := (r.CenterLat - lat) * math.Pi / 180
-	dLng := (r.CenterLng - lng) * math.Pi / 180
-	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
-		math.Cos(lat*math.Pi/180)*math.Cos(r.CenterLat*math.Pi/180)*
-			math.Sin(dLng/2)*math.Sin(dLng/2)
+	switch v := rawLng.(type) {
+	case int:
+		lng = float64(v)
+	case float32:
+		lng = float64(v)
+	case float64:
+		lng = v
+	default:
+		return false
+	}
+
+	// Haversine formula
+	const earthRadius = 6371000.0 // meters
+
+	latRad1 := degToRad(lat)
+	latRad2 := degToRad(r.LatCenter)
+	deltaLat := degToRad(r.LatCenter - lat)
+	deltaLng := degToRad(r.LngCenter - lng)
+
+	a := math.Sin(deltaLat/2)*math.Sin(deltaLat/2) +
+		math.Cos(latRad1)*math.Cos(latRad2)*
+			math.Sin(deltaLng/2)*math.Sin(deltaLng/2)
+
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-	return R*c <= r.RadiusMeters
+
+	distance := earthRadius * c
+	return distance <= r.RadiusMeters
 }
 
 func (r *GeoFenceRule) Value() any      { return r.ValueData }
