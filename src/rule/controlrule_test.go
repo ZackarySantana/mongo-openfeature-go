@@ -143,3 +143,23 @@ func TestNotRule(t *testing.T) {
 		})
 	}
 }
+
+func TestOverrideRule(t *testing.T) {
+	for tName, tCase := range map[string]map[string]any{
+		"WithContext": {
+			"any_key": "any_value",
+		},
+		"EmptyContext": {},
+		"NilContext":   nil,
+	} {
+		t.Run(tName, func(t *testing.T) {
+			rule := &OverrideRule{
+				ValueData: "override_value_data",
+				VariantID: "override_variant",
+			}
+
+			// OverrideRule always matches.
+			assert.True(t, rule.Matches(tCase))
+		})
+	}
+}
