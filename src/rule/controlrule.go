@@ -101,6 +101,30 @@ func (c *ConcreteRule) Matches(ctx map[string]any) bool {
 	if c.FractionalRule != nil {
 		return c.FractionalRule.Matches(ctx)
 	}
+	if c.RangeRule != nil {
+		return c.RangeRule.Matches(ctx)
+	}
+	if c.InListRule != nil {
+		return c.InListRule.Matches(ctx)
+	}
+	if c.PrefixRule != nil {
+		return c.PrefixRule.Matches(ctx)
+	}
+	if c.SuffixRule != nil {
+		return c.SuffixRule.Matches(ctx)
+	}
+	if c.ContainsRule != nil {
+		return c.ContainsRule.Matches(ctx)
+	}
+	if c.IPRangeRule != nil {
+		return c.IPRangeRule.Matches(ctx)
+	}
+	if c.GeoFenceRule != nil {
+		return c.GeoFenceRule.Matches(ctx)
+	}
+	if c.DateTimeRule != nil {
+		return c.DateTimeRule.Matches(ctx)
+	}
 	if c.AndRule != nil {
 		return c.AndRule.Matches(ctx)
 	}
