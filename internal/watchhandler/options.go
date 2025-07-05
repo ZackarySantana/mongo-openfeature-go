@@ -6,6 +6,7 @@ import (
 
 	"github.com/zackarysantana/mongo-openfeature-go/internal/eventhandler"
 	mongoopenfeature "github.com/zackarysantana/mongo-openfeature-go/src"
+	"github.com/zackarysantana/mongo-openfeature-go/src/cache"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -18,6 +19,8 @@ type Options struct {
 	Database string
 	// Collection is the name of the MongoDB collection to use.
 	Collection string
+	// Cache is the cache to update while watching for changes.
+	Cache *cache.Cache
 
 	// ===== Optional ======
 
@@ -39,11 +42,12 @@ type Options struct {
 	ParentContext context.Context
 }
 
-func NewOptions(client *mongo.Client, database, collection string) *Options {
+func NewOptions(client *mongo.Client, database, collection string, cache *cache.Cache) *Options {
 	return &Options{
 		Client:     client,
 		Database:   database,
 		Collection: collection,
+		Cache:      cache,
 	}
 }
 
@@ -100,6 +104,9 @@ func (opts *Options) Validate() error {
 	}
 	if opts.Collection == "" {
 		return mongoopenfeature.ErrMissingCollection
+	}
+	if opts.Cache == nil {
+		return mongoopenfeature.ErrMissingCache
 	}
 
 	// Setting defaults

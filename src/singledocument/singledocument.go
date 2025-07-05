@@ -28,6 +28,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 	if err := opts.Validate(); err != nil {
 		return nil, nil, fmt.Errorf("validating options: %w", err)
 	}
+	cacheHandler := cache.New()
 
 	eventHandler, err := eventhandler.New(eventhandler.NewOptions(
 		eventhandler.CreateDroppedEventLogger(opts.Logger, ProviderName),
@@ -35,7 +36,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating event handler: %w", err)
 	}
-	watchHandler, err := watchhandler.New(watchhandler.NewOptions(opts.Client, opts.Database, opts.Collection).
+	watchHandler, err := watchhandler.New(watchhandler.NewOptions(opts.Client, opts.Database, opts.Collection, cacheHandler).
 		WithEventHandler(eventHandler).
 		WithDocumentID(opts.DocumentID).
 		WithLogger(opts.Logger),
@@ -52,8 +53,6 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 		return nil, nil, fmt.Errorf("creating mongo openfeature client: %w", err)
 	}
 
-	cacheHandler := cache.New()
-
 	p := &SingleDocumentProvider{
 		EventHandler:   eventHandler,
 		StateHandler:   statehandler.New(),
@@ -64,21 +63,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 	p.StateHandler.RegisterShutdownFunc(p.EventHandler.Close)
 
 	p.StateHandler.RegisterStartupFunc(func() error {
-		go watchHandler.Watch(func(event watchhandler.ChangeStreamEvent) error {
-			if id, ok := event.FullDocument["_id"]; !ok || id != opts.DocumentID {
-				return fmt.Errorf("change document ID does not match expected ID: %v != %v", id, opts.DocumentID)
-			}
-			delete(event.FullDocument, "_id")
-			cacheHandler.Clear()
-
-			for key, value := range event.FullDocument {
-				if err := cacheHandler.Set(key, value); err != nil {
-					return fmt.Errorf("setting cache value for key %s: %w", key, err)
-				}
-			}
-
-			return nil
-		})
+		go watchHandler.Watch()
 		return nil
 	})
 	p.StateHandler.RegisterShutdownFunc(watchHandler.Close)
