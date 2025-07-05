@@ -21,7 +21,7 @@ var _ openfeature.EventHandler = (*SingleDocumentProvider)(nil)
 var _ openfeature.StateHandler = (*SingleDocumentProvider)(nil)
 
 // The client's shutdown is expected to be handled by the caller.
-func NewSingleDocumentProvider(opts *SingleDocumentProviderOptions) (*SingleDocumentProvider, error) {
+func NewProvider(opts *SingleDocumentProviderOptions) (*SingleDocumentProvider, error) {
 	if err := opts.Validate(); err != nil {
 		return nil, fmt.Errorf("validating options: %w", err)
 	}
