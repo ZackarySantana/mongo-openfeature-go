@@ -24,16 +24,16 @@ var _ openfeature.EventHandler = (*SingleDocumentProvider)(nil)
 var _ openfeature.StateHandler = (*SingleDocumentProvider)(nil)
 
 // The client's shutdown is expected to be handled by the caller.
-func NewProvider(opts *Options) (*SingleDocumentProvider, error) {
+func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error) {
 	if err := opts.Validate(); err != nil {
-		return nil, fmt.Errorf("validating options: %w", err)
+		return nil, nil, fmt.Errorf("validating options: %w", err)
 	}
 
 	eventHandler, err := eventhandler.New(eventhandler.NewOptions(
 		eventhandler.CreateDroppedEventLogger(opts.Logger, ProviderName),
 	))
 	if err != nil {
-		return nil, fmt.Errorf("creating event handler: %w", err)
+		return nil, nil, fmt.Errorf("creating event handler: %w", err)
 	}
 	watchHandler, err := watchhandler.New(watchhandler.NewOptions(opts.Client, opts.Database, opts.Collection).
 		WithEventHandler(eventHandler).
@@ -41,7 +41,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, error) {
 		WithDocumentID(opts.DocumentID),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("creating watch handler: %w", err)
+		return nil, nil, fmt.Errorf("creating watch handler: %w", err)
 	}
 
 	client, err := client.New(client.NewOptions(opts.Client, opts.Database, opts.Collection).
@@ -49,7 +49,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, error) {
 		WithLogger(opts.Logger),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("creating mongo openfeature client: %w", err)
+		return nil, nil, fmt.Errorf("creating mongo openfeature client: %w", err)
 	}
 
 	p := &SingleDocumentProvider{
@@ -100,7 +100,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, error) {
 
 		return nil
 	})
-	return p, nil
+	return p, client, nil
 }
 
 type SingleDocumentProvider struct {

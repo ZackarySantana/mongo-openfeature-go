@@ -12,7 +12,6 @@ import (
 	"github.com/zackarysantana/mongo-openfeature-go/src/flag"
 	"github.com/zackarysantana/mongo-openfeature-go/src/rule"
 	"github.com/zackarysantana/mongo-openfeature-go/src/singledocument"
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -36,7 +35,7 @@ func main() {
 		log.Fatal("connecting to MongoDB: ", err)
 	}
 
-	provider, err := singledocument.NewProvider(singledocument.NewOptions(mongoClient, database, collection, documentID))
+	provider, ofClient, err := singledocument.NewProvider(singledocument.NewOptions(mongoClient, database, collection, documentID))
 	if err != nil {
 		log.Fatal("creating SingleDocumentProvider: ", err)
 	}
@@ -98,23 +97,10 @@ func main() {
 		},
 	}
 
-	document := map[string]flag.Definition{
-		"v2_enabled": flagDefinition,
-	}
-
 	fmt.Println("Updating the feature flags")
-	result, err := mongoClient.Database(database).Collection(collection).UpdateByID(
-		context.TODO(),
-		documentID,
-		bson.M{
-			"$set": document,
-		},
-		options.UpdateOne().SetUpsert(true),
-	)
-	if err != nil {
+	if err = ofClient.SetFlag(context.TODO(), flagDefinition); err != nil {
 		log.Fatal("updating feature flags: ", err)
 	}
-	fmt.Println("Update result:", result)
 
 	time.Sleep(10 * time.Second)
 
