@@ -10,8 +10,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/open-feature/go-sdk/openfeature"
 )
 
 type Rule interface {
@@ -330,33 +328,3 @@ func (r *DateTimeRule) Matches(ctx map[string]any) bool {
 
 func (r *DateTimeRule) Value() any      { return r.ValueData }
 func (r *DateTimeRule) Variant() string { return r.VariantID }
-
-// -----------------------------------------------------------------------------
-// FlagDefinition (non‐generic) with its own Evaluate
-// -----------------------------------------------------------------------------
-
-type FlagDefinition struct {
-	FlagName string
-
-	DefaultValue   any
-	DefaultVariant string
-
-	Rules []ConcreteRule
-}
-
-// Evaluate walks the Rules in order, returns the first match’s (value,detail),
-// or the default if none match.
-func (def *FlagDefinition) Evaluate(ctx map[string]any) (any, openfeature.ProviderResolutionDetail) {
-	for _, rule := range def.Rules {
-		if rule.Matches(ctx) {
-			return rule.Value(), openfeature.ProviderResolutionDetail{
-				Reason:  openfeature.TargetingMatchReason,
-				Variant: rule.Variant(),
-			}
-		}
-	}
-	return def.DefaultValue, openfeature.ProviderResolutionDetail{
-		Reason:  openfeature.DefaultReason,
-		Variant: def.DefaultVariant,
-	}
-}
