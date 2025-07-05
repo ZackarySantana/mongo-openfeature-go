@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-func NewCache() *Cache {
+func New() *Cache {
 	return &Cache{
 		cacheMutex: sync.RWMutex{},
 		cache:      make(map[string]flag.Definition),

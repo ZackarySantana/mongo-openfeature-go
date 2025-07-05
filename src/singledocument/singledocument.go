@@ -7,10 +7,10 @@ import (
 	"log/slog"
 
 	"github.com/open-feature/go-sdk/openfeature"
-	"github.com/zackarysantana/mongo-openfeature-go/internal/cache"
 	"github.com/zackarysantana/mongo-openfeature-go/internal/eventhandler"
 	"github.com/zackarysantana/mongo-openfeature-go/internal/statehandler"
 	"github.com/zackarysantana/mongo-openfeature-go/internal/watchhandler"
+	"github.com/zackarysantana/mongo-openfeature-go/src/cache"
 	"github.com/zackarysantana/mongo-openfeature-go/src/client"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -52,11 +52,14 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 		return nil, nil, fmt.Errorf("creating mongo openfeature client: %w", err)
 	}
 
+	cacheHandler := cache.New()
+
 	p := &SingleDocumentProvider{
-		EventHandler: eventHandler,
-		StateHandler: statehandler.New(),
-		cache:        cache.NewCache(),
-		logger:       opts.Logger,
+		EventHandler:   eventHandler,
+		StateHandler:   statehandler.New(),
+		CacheEvaluator: cache.NewEvaluator(cacheHandler),
+		cache:          cacheHandler,
+		logger:         opts.Logger,
 	}
 	p.StateHandler.RegisterShutdownFunc(p.EventHandler.Close)
 
@@ -66,10 +69,10 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 				return fmt.Errorf("change document ID does not match expected ID: %v != %v", id, opts.DocumentID)
 			}
 			delete(event.FullDocument, "_id")
-			p.cache.Clear()
+			cacheHandler.Clear()
 
 			for key, value := range event.FullDocument {
-				if err := p.cache.Set(key, value); err != nil {
+				if err := cacheHandler.Set(key, value); err != nil {
 					return fmt.Errorf("setting cache value for key %s: %w", key, err)
 				}
 			}
@@ -102,6 +105,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 type SingleDocumentProvider struct {
 	*eventhandler.EventHandler
 	*statehandler.StateHandler
+	*cache.CacheEvaluator
 	cache *cache.Cache
 
 	logger *slog.Logger
