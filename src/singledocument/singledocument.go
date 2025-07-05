@@ -37,8 +37,8 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 	}
 	watchHandler, err := watchhandler.New(watchhandler.NewOptions(opts.Client, opts.Database, opts.Collection).
 		WithEventHandler(eventHandler).
-		WithLogger(opts.Logger).
-		WithDocumentID(opts.DocumentID),
+		WithDocumentID(opts.DocumentID).
+		WithLogger(opts.Logger),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating watch handler: %w", err)
