@@ -5,28 +5,28 @@ import (
 	"sync"
 
 	"github.com/open-feature/go-sdk/openfeature"
-	"github.com/zackarysantana/mongo-openfeature-go/src/rules"
+	"github.com/zackarysantana/mongo-openfeature-go/src/flag"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func NewCache() *Cache {
 	return &Cache{
 		cacheMutex: sync.RWMutex{},
-		cache:      make(map[string]rules.FlagDefinition),
+		cache:      make(map[string]flag.Definition),
 	}
 }
 
 type Cache struct {
 	cacheMutex sync.RWMutex `bson:"-"`
-	cache      map[string]rules.FlagDefinition
+	cache      map[string]flag.Definition
 }
 
-func (c *Cache) Set(flag string, definition any) error {
-	parsedDefinition, ok := definition.(rules.FlagDefinition)
+func (c *Cache) Set(flagKey string, definition any) error {
+	parsedDefinition, ok := definition.(flag.Definition)
 	if ok {
 		c.cacheMutex.Lock()
 		defer c.cacheMutex.Unlock()
-		c.cache[flag] = parsedDefinition
+		c.cache[flagKey] = parsedDefinition
 		return nil
 	}
 	// If the definition is not of type FlagDefinition, we attempt to parse it.
@@ -40,7 +40,7 @@ func (c *Cache) Set(flag string, definition any) error {
 
 	c.cacheMutex.Lock()
 	defer c.cacheMutex.Unlock()
-	c.cache[flag] = parsedDefinition
+	c.cache[flagKey] = parsedDefinition
 
 	return nil
 }

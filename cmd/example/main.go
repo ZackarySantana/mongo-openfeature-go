@@ -9,7 +9,8 @@ import (
 
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/zackarysantana/mongo-openfeature-go/internal/testutil"
-	"github.com/zackarysantana/mongo-openfeature-go/src/rules"
+	"github.com/zackarysantana/mongo-openfeature-go/src/flag"
+	"github.com/zackarysantana/mongo-openfeature-go/src/rule"
 	"github.com/zackarysantana/mongo-openfeature-go/src/singledocument"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -61,46 +62,46 @@ func main() {
 			log.Fatal("connecting to MongoDB: ", err)
 		}
 
-		flagDefinition := rules.FlagDefinition{
+		flagDefinition := flag.Definition{
 			FlagName:       "v2_enabled",
 			DefaultValue:   "false",
 			DefaultVariant: "database_default",
-			Rules: []rules.ConcreteRule{
-				{ExactMatchRule: &rules.ExactMatchRule{
+			Rules: []rule.ConcreteRule{
+				{ExactMatchRule: &rule.ExactMatchRule{
 					Key:       "user_id",
 					VariantID: "exact-rule",
 					KeyValue:  "12345",
 					ValueData: "database_default_2",
 				}},
-				{RegexRule: &rules.RegexRule{
+				{RegexRule: &rule.RegexRule{
 					Key:           "user_id",
 					VariantID:     "regex-rule",
 					RegexpPattern: "^[0-9]{3}$",
 					ValueData:     "regex_default",
 				}},
-				{ExistsRule: &rules.ExistsRule{
+				{ExistsRule: &rule.ExistsRule{
 					Key:       "unique_user_id",
 					VariantID: "exists-rule",
 					ValueData: "exists_default",
 				}},
-				{FractionalRule: &rules.FractionalRule{
+				{FractionalRule: &rule.FractionalRule{
 					Key:        "user_id",
 					VariantID:  "fractional-rule",
 					Percentage: 1.0,
 					ValueData:  "fractional_default_small",
 				}},
-				{FractionalRule: &rules.FractionalRule{
+				{FractionalRule: &rule.FractionalRule{
 					Key:        "user_id",
 					VariantID:  "fractional-rule",
 					Percentage: 99.0,
 					ValueData:  "fractional_default_large",
 				}},
-				{AndRule: &rules.AndRule{
-					Rules: []rules.ConcreteRule{
-						{ExistsRule: &rules.ExistsRule{
+				{AndRule: &rule.AndRule{
+					Rules: []rule.ConcreteRule{
+						{ExistsRule: &rule.ExistsRule{
 							Key: "unique_id_thing",
 						}},
-						{ExistsRule: &rules.ExistsRule{
+						{ExistsRule: &rule.ExistsRule{
 							Key: "other_unique_id_thing",
 						}},
 					},
@@ -109,7 +110,7 @@ func main() {
 			},
 		}
 
-		document := map[string]rules.FlagDefinition{
+		document := map[string]flag.Definition{
 			"v2_enabled": flagDefinition,
 		}
 
