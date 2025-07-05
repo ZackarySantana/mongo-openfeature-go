@@ -12,12 +12,6 @@ import (
 	"time"
 )
 
-type Rule interface {
-	Matches(ctx map[string]any) bool
-	Value() any
-	Variant() string
-}
-
 // ExactMatchRule fires if ctx[Key] deep‐equals ValueData.
 type ExactMatchRule struct {
 	Key      string
