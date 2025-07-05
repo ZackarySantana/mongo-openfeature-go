@@ -2,6 +2,7 @@ package singledocument
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -87,6 +88,10 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, error) {
 		// TODO: Edit all contexts to use a timeout and add it to the options.
 		flags, err := client.GetAllFlags(context.Background())
 		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				fmt.Println("No flags found in the document, initializing cache with empty values.")
+				return nil
+			}
 			return fmt.Errorf("getting all flags: %w", err)
 		}
 		if err := p.cache.SetAll(flags); err != nil {
