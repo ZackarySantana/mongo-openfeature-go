@@ -29,13 +29,20 @@ type Options struct {
 	Logger *slog.Logger
 }
 
-func NewOptions(client *mongo.Client, database, collection, documentID string) *Options {
+func NewOptions(client *mongo.Client, database, collection string) *Options {
 	return &Options{
 		Client:     client,
 		Database:   database,
 		Collection: collection,
-		DocumentID: documentID,
 	}
+}
+
+func (opts *Options) WithDocumentID(documentID string) *Options {
+	if opts == nil {
+		opts = &Options{}
+	}
+	opts.DocumentID = documentID
+	return opts
 }
 
 func (opts *Options) WithLogger(logger *slog.Logger) *Options {
