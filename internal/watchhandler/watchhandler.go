@@ -45,6 +45,11 @@ type WatchHandler struct {
 	logger       *slog.Logger
 }
 
+type ChangeStreamEvent struct {
+	FullDocument  bson.M `bson:"fullDocument"`
+	OperationType string `bson:"operationType"`
+}
+
 func (w *WatchHandler) Watch() {
 	success := false
 	for attempt := 0; attempt <= w.maxTries; attempt++ {
