@@ -53,21 +53,17 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 	}
 
 	p := &SingleDocumentProvider{
-		EventHandler:      eventHandler,
-		StateHandler:      statehandler.New(),
-		watchHandler:      watchHandler,
-		openfeatureClient: client,
-		collection:        opts.Client.Database(opts.Database).Collection(opts.Collection),
-		documentID:        opts.DocumentID,
-		cache:             cache.NewCache(),
-		logger:            opts.Logger,
+		EventHandler: eventHandler,
+		StateHandler: statehandler.New(),
+		cache:        cache.NewCache(),
+		logger:       opts.Logger,
 	}
 	p.StateHandler.RegisterShutdownFunc(p.EventHandler.Close)
 
 	p.StateHandler.RegisterStartupFunc(func() error {
-		go p.watchHandler.Watch(func(event watchhandler.ChangeStreamEvent) error {
-			if id, ok := event.FullDocument["_id"]; !ok || id != p.documentID {
-				return fmt.Errorf("change document ID does not match expected ID: %v != %v", id, p.documentID)
+		go watchHandler.Watch(func(event watchhandler.ChangeStreamEvent) error {
+			if id, ok := event.FullDocument["_id"]; !ok || id != opts.DocumentID {
+				return fmt.Errorf("change document ID does not match expected ID: %v != %v", id, opts.DocumentID)
 			}
 			delete(event.FullDocument, "_id")
 			p.cache.Clear()
@@ -82,7 +78,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 		})
 		return nil
 	})
-	p.StateHandler.RegisterShutdownFunc(p.watchHandler.Close)
+	p.StateHandler.RegisterShutdownFunc(watchHandler.Close)
 
 	p.StateHandler.RegisterStartupFunc(func() error {
 		// TODO: Edit all contexts to use a timeout and add it to the options.
@@ -106,12 +102,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, *client.Client, error)
 type SingleDocumentProvider struct {
 	*eventhandler.EventHandler
 	*statehandler.StateHandler
-	watchHandler      *watchhandler.WatchHandler
-	openfeatureClient *client.Client
-	cache             *cache.Cache
-
-	collection *mongo.Collection
-	documentID string
+	cache *cache.Cache
 
 	logger *slog.Logger
 }
