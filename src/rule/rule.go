@@ -19,6 +19,7 @@ import (
 type ExactMatchRule struct {
 	Key      string
 	KeyValue string
+	Priority int
 
 	VariantID string
 	ValueData any
@@ -29,13 +30,15 @@ func (r *ExactMatchRule) Matches(ctx map[string]any) bool {
 	return ok && (v == r.KeyValue || reflect.DeepEqual(v, r.KeyValue))
 }
 
-func (r *ExactMatchRule) Value() any      { return r.ValueData }
-func (r *ExactMatchRule) Variant() string { return r.VariantID }
+func (r *ExactMatchRule) Value() any       { return r.ValueData }
+func (r *ExactMatchRule) Variant() string  { return r.VariantID }
+func (r *ExactMatchRule) GetPriority() int { return r.Priority }
 
 // RegexRule fires if ctx[Key] (string) matches Pattern.
 type RegexRule struct {
 	Key           string
 	RegexpPattern string
+	Priority      int
 	// Regexp is not serialized, but compiled on demand.
 	// This is to avoid the overhead of compiling the regex on every match.
 	Regexp *regexp.Regexp `json:"-" bson:"-"`
@@ -62,12 +65,14 @@ func (r *RegexRule) Matches(ctx map[string]any) bool {
 	return ok && r.Regexp.MatchString(s)
 }
 
-func (r *RegexRule) Value() any      { return r.ValueData }
-func (r *RegexRule) Variant() string { return r.VariantID }
+func (r *RegexRule) Value() any       { return r.ValueData }
+func (r *RegexRule) Variant() string  { return r.VariantID }
+func (r *RegexRule) GetPriority() int { return r.Priority }
 
 // ExistsRule fires if ctx contains Key at all.
 type ExistsRule struct {
-	Key string
+	Key      string
+	Priority int
 
 	VariantID string
 	ValueData any
@@ -78,13 +83,15 @@ func (r *ExistsRule) Matches(ctx map[string]any) bool {
 	return ok
 }
 
-func (r *ExistsRule) Value() any      { return r.ValueData }
-func (r *ExistsRule) Variant() string { return r.VariantID }
+func (r *ExistsRule) Value() any       { return r.ValueData }
+func (r *ExistsRule) Variant() string  { return r.VariantID }
+func (r *ExistsRule) GetPriority() int { return r.Priority }
 
 // FractionalRule fires a percentage of the time (deterministic via FNV+salt).
 type FractionalRule struct {
 	Key        string
 	Percentage float64 // in [0.0,100.0)
+	Priority   int
 
 	VariantID string
 	ValueData any
@@ -101,14 +108,16 @@ func (r *FractionalRule) Matches(ctx map[string]any) bool {
 	return float64(bucket) < r.Percentage
 }
 
-func (r *FractionalRule) Value() any      { return r.ValueData }
-func (r *FractionalRule) Variant() string { return r.VariantID }
+func (r *FractionalRule) Value() any       { return r.ValueData }
+func (r *FractionalRule) Variant() string  { return r.VariantID }
+func (r *FractionalRule) GetPriority() int { return r.Priority }
 
 // RangeRule fires if ctx[Key] falls between Min and Max.
 type RangeRule struct {
 	Key                        string
 	Min, Max                   float64
 	ExclusiveMin, ExclusiveMax bool
+	Priority                   int
 
 	VariantID string
 	ValueData any
@@ -149,13 +158,15 @@ func (r *RangeRule) Matches(ctx map[string]any) bool {
 	return v <= r.Max
 }
 
-func (r *RangeRule) Value() any      { return r.ValueData }
-func (r *RangeRule) Variant() string { return r.VariantID }
+func (r *RangeRule) Value() any       { return r.ValueData }
+func (r *RangeRule) Variant() string  { return r.VariantID }
+func (r *RangeRule) GetPriority() int { return r.Priority }
 
 // InListRule fires if ctx[Key] is deep equal to one of Items.
 type InListRule struct {
-	Key   string
-	Items []any
+	Key      string
+	Items    []any
+	Priority int
 
 	VariantID string
 	ValueData any
@@ -174,13 +185,15 @@ func (r *InListRule) Matches(ctx map[string]any) bool {
 	return false
 }
 
-func (r *InListRule) Value() any      { return r.ValueData }
-func (r *InListRule) Variant() string { return r.VariantID }
+func (r *InListRule) Value() any       { return r.ValueData }
+func (r *InListRule) Variant() string  { return r.VariantID }
+func (r *InListRule) GetPriority() int { return r.Priority }
 
 // PrefixRule fires if ctx[Key] (string) has the given prefix.
 type PrefixRule struct {
-	Key    string
-	Prefix string
+	Key      string
+	Prefix   string
+	Priority int
 
 	VariantID string
 	ValueData any
@@ -195,13 +208,15 @@ func (r *PrefixRule) Matches(ctx map[string]any) bool {
 	return ok && strings.HasPrefix(stringData, r.Prefix)
 }
 
-func (r *PrefixRule) Value() any      { return r.ValueData }
-func (r *PrefixRule) Variant() string { return r.VariantID }
+func (r *PrefixRule) Value() any       { return r.ValueData }
+func (r *PrefixRule) Variant() string  { return r.VariantID }
+func (r *PrefixRule) GetPriority() int { return r.Priority }
 
 // SuffixRule fires if ctx[Key] (string) has the given suffix.
 type SuffixRule struct {
-	Key    string
-	Suffix string
+	Key      string
+	Suffix   string
+	Priority int
 
 	VariantID string
 	ValueData any
@@ -216,13 +231,15 @@ func (r *SuffixRule) Matches(ctx map[string]any) bool {
 	return ok && strings.HasSuffix(stringData, r.Suffix)
 }
 
-func (r *SuffixRule) Value() any      { return r.ValueData }
-func (r *SuffixRule) Variant() string { return r.VariantID }
+func (r *SuffixRule) Value() any       { return r.ValueData }
+func (r *SuffixRule) Variant() string  { return r.VariantID }
+func (r *SuffixRule) GetPriority() int { return r.Priority }
 
 // ContainsRule fires if ctx[Key] (string) contains the given substring.
 type ContainsRule struct {
 	Key       string
 	Substring string
+	Priority  int
 
 	VariantID string
 	ValueData any
@@ -237,13 +254,15 @@ func (r *ContainsRule) Matches(ctx map[string]any) bool {
 	return ok && strings.Contains(stringData, r.Substring)
 }
 
-func (r *ContainsRule) Value() any      { return r.ValueData }
-func (r *ContainsRule) Variant() string { return r.VariantID }
+func (r *ContainsRule) Value() any       { return r.ValueData }
+func (r *ContainsRule) Variant() string  { return r.VariantID }
+func (r *ContainsRule) GetPriority() int { return r.Priority }
 
 // IPRangeRule fires if ctx[Key] (string) parses as an IP in any of CIDRs.
 type IPRangeRule struct {
-	Key   string
-	CIDRs []string
+	Key      string
+	CIDRs    []string
+	Priority int
 
 	VariantID string
 	ValueData any
@@ -266,8 +285,9 @@ func (r *IPRangeRule) Matches(ctx map[string]any) bool {
 	return false
 }
 
-func (r *IPRangeRule) Value() any      { return r.ValueData }
-func (r *IPRangeRule) Variant() string { return r.VariantID }
+func (r *IPRangeRule) Value() any       { return r.ValueData }
+func (r *IPRangeRule) Variant() string  { return r.VariantID }
+func (r *IPRangeRule) GetPriority() int { return r.Priority }
 
 // GeoFenceRule fires if two coordinates in ctx are within RadiusMeters
 // of the center (using a simple haversine).
@@ -275,6 +295,7 @@ type GeoFenceRule struct {
 	LatKey, LngKey       string
 	LatCenter, LngCenter float64
 	RadiusMeters         float64
+	Priority             int
 
 	VariantID string
 	ValueData any
@@ -332,14 +353,16 @@ func (r *GeoFenceRule) Matches(ctx map[string]any) bool {
 	return distance <= r.RadiusMeters
 }
 
-func (r *GeoFenceRule) Value() any      { return r.ValueData }
-func (r *GeoFenceRule) Variant() string { return r.VariantID }
+func (r *GeoFenceRule) Value() any       { return r.ValueData }
+func (r *GeoFenceRule) Variant() string  { return r.VariantID }
+func (r *GeoFenceRule) GetPriority() int { return r.Priority }
 
 // DateTimeRule fires if ctx[Key] (time.Time) is between After and Before.
 type DateTimeRule struct {
-	Key    string
-	After  time.Time
-	Before time.Time
+	Key      string
+	After    time.Time
+	Before   time.Time
+	Priority int
 
 	VariantID string
 	ValueData any
@@ -353,12 +376,14 @@ func (r *DateTimeRule) Matches(ctx map[string]any) bool {
 	return raw.After(r.After) && raw.Before(r.Before)
 }
 
-func (r *DateTimeRule) Value() any      { return r.ValueData }
-func (r *DateTimeRule) Variant() string { return r.VariantID }
+func (r *DateTimeRule) Value() any       { return r.ValueData }
+func (r *DateTimeRule) Variant() string  { return r.VariantID }
+func (r *DateTimeRule) GetPriority() int { return r.Priority }
 
 type SemVerRule struct {
 	Key        string
 	Constraint string // e.g., ">= 1.2.3, < 2.0.0" or "~2.3.4"
+	Priority   int
 
 	VariantID string
 	ValueData any
@@ -386,8 +411,9 @@ func (r *SemVerRule) Matches(ctx map[string]any) bool {
 	return c.Check(v)
 }
 
-func (r *SemVerRule) Value() any      { return r.ValueData }
-func (r *SemVerRule) Variant() string { return r.VariantID }
+func (r *SemVerRule) Value() any       { return r.ValueData }
+func (r *SemVerRule) Variant() string  { return r.VariantID }
+func (r *SemVerRule) GetPriority() int { return r.Priority }
 
 // CronRule fires if a time falls within a recurring window. The window starts
 // at a time defined by the CronSpec and lasts for the specified Duration.
@@ -411,6 +437,7 @@ type CronRule struct {
 	Key      string        // Optional. If empty, time.Now() is used.
 	CronSpec string        // e.g., "0 9 * * MON-FRI" for 9:00 AM on weekdays.
 	Duration time.Duration // e.g., 8 * time.Hour for an 8-hour window.
+	Priority int
 
 	// schedule is not serialized, but compiled on demand from CronSpec.
 	schedule cron.Schedule `json:"-" bson:"-"`
@@ -464,5 +491,6 @@ func (r *CronRule) Matches(ctx map[string]any) bool {
 	return !previousOrNextActivation.After(checkTime)
 }
 
-func (r *CronRule) Value() any      { return r.ValueData }
-func (r *CronRule) Variant() string { return r.VariantID }
+func (r *CronRule) Value() any       { return r.ValueData }
+func (r *CronRule) Variant() string  { return r.VariantID }
+func (r *CronRule) GetPriority() int { return r.Priority }

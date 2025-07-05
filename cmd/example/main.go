@@ -94,6 +94,10 @@ func main() {
 				},
 				ValueData: "and_default",
 			}},
+			// {OverrideRule: &rule.OverrideRule{
+			// 	VariantID: "override-rule",
+			// 	ValueData: "override_default",
+			// }},
 		},
 	}
 
