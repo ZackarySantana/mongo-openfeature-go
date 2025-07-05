@@ -47,7 +47,7 @@ func main() {
 	}
 	client := openfeature.NewClient("sentry-client")
 
-	v2Enbaled := client.String(context.TODO(), "v2_enabled", "provided_default", openfeature.EvaluationContext{})
+	v2Enbaled := client.String(context.TODO(), "v2_enabled", "provided_default", openfeature.NewEvaluationContext("1234", nil))
 	fmt.Println("early v2_enabled:", v2Enbaled)
 
 	flagDefinition := flag.Definition{
