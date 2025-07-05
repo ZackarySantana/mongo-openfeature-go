@@ -80,6 +80,33 @@ err := ofClient.SetFlag(context.TODO(), flagDefinition)
 // Now future calls to the flag will use the new definition.
 ```
 
+### Rules
+
+Rules share common values, like Key, VariantID, Priority, and ValueData. For example, this ExactMatchRule:
+
+```go
+rule.ExactMatchRule{
+    Key:        "user_id",
+    KeyValue:   "zackary_santana",
+    VariantID:  "superadmin-zackary",
+    Priority: 100,
+    ValueData:  "it's enabled for superadmin",
+}
+```
+
+Matches on the key 'user_id'. If it's matched, it will inform the OpenFeature SDK of it's 'VariantID' and 'ValueData'.
+
+#### ExactMatchRule
+
+```go
+ExactMatchRule: &rule.ExactMatchRule{
+    Key:        "user_id",
+    VariantID:  "superadmin-zackary",
+    KeyValue:   "zackary_santana",
+    ValueData:  "it's enabled for superadmin",
+}
+```
+
 ### Example
 
 For a complete example, look at [cmd/example/main.go](cmd/example/main.go).
