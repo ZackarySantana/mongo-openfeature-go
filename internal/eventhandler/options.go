@@ -17,6 +17,12 @@ type Options struct {
 	DroppedEventHandler DroppedEventHandler
 }
 
+func NewOptions(droppedEventHandler DroppedEventHandler) *Options {
+	return &Options{
+		DroppedEventHandler: droppedEventHandler,
+	}
+}
+
 func (opts *Options) Validate() error {
 	if opts == nil {
 		return ErrNilOptions

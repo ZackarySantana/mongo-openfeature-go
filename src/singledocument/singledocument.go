@@ -26,9 +26,9 @@ func NewSingleDocumentProvider(opts *SingleDocumentProviderOptions) (*SingleDocu
 		return nil, fmt.Errorf("validating options: %w", err)
 	}
 
-	eventHandler, err := eventhandler.New(&eventhandler.Options{
-		DroppedEventHandler: eventhandler.CreateDroppedEventLogger(opts.Logger, ProviderName),
-	})
+	eventHandler, err := eventhandler.New(eventhandler.NewOptions(
+		eventhandler.CreateDroppedEventLogger(opts.Logger, ProviderName),
+	))
 	if err != nil {
 		return nil, fmt.Errorf("creating event handler: %w", err)
 	}
