@@ -3,7 +3,9 @@ module github.com/zackarysantana/mongo-openfeature-go
 go 1.24.0
 
 require (
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/open-feature/go-sdk v1.15.1
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	github.com/testcontainers/testcontainers-go/modules/mongodb v0.37.0

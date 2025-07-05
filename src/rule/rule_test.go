@@ -118,7 +118,7 @@ func TestExistsRule(t *testing.T) {
 
 func TestFractionalRule(t *testing.T) {
 	ctxs := []map[string]any{}
-	for i := 0; i < 100000; i++ {
+	for i := 1; i < 100000; i++ {
 		ctxs = append(ctxs, map[string]any{
 			"test_key": fmt.Sprintf("test_value_%f", rand.Float64()),
 		})
@@ -462,4 +462,138 @@ func TestDateTimeRule(t *testing.T) {
 			assert.Equal(t, tCase.matches, rule.Matches(tCase.ctx))
 		})
 	}
+}
+
+func TestSemVerRule(t *testing.T) {
+	rule := &SemVerRule{
+		Key:        "app_version",
+		Constraint: ">= 2.5.0, < 3.0.0-beta",
+		VariantID:  "semver_variant",
+		ValueData:  "semver_value_data",
+	}
+
+	for tName, tCase := range map[string]struct {
+		ctx     map[string]any
+		matches bool
+	}{
+		"NotFound": {
+			ctx:     map[string]any{"other_key": "1.0.0"},
+			matches: false,
+		},
+		"InvalidVersionInContext": {
+			ctx:     map[string]any{"app_version": "not-a-version"},
+			matches: false,
+		},
+		"InRange": {
+			ctx:     map[string]any{"app_version": "2.5.0"},
+			matches: true,
+		},
+		"InRangePatch": {
+			ctx:     map[string]any{"app_version": "2.6.1"},
+			matches: true,
+		},
+		"InRangePrerelease": {
+			ctx:     map[string]any{"app_version": "3.0.0-alpha"},
+			matches: true,
+		},
+		"OutOfRangeBelow": {
+			ctx:     map[string]any{"app_version": "2.4.9"},
+			matches: false,
+		},
+		"OutOfRangeAbove": {
+			ctx:     map[string]any{"app_version": "3.0.0"},
+			matches: false,
+		},
+		"OutOfRangePrerelease": {
+			ctx:     map[string]any{"app_version": "3.0.0-rc1"},
+			matches: false,
+		},
+	} {
+		t.Run(tName, func(t *testing.T) {
+			assert.Equal(t, tCase.matches, rule.Matches(tCase.ctx))
+		})
+	}
+}
+
+func TestCronRule_WithContext(t *testing.T) {
+	// Rule for business hours: 9:00 AM to 5:00 PM (8h duration) on weekdays.
+	rule := &CronRule{
+		Key:       "request_time",
+		CronSpec:  "0 9 * * MON-FRI",
+		Duration:  8 * time.Hour,
+		VariantID: "cron_variant",
+		ValueData: "cron_value_data",
+	}
+
+	for tName, tCase := range map[string]struct {
+		ctx     map[string]any
+		matches bool
+	}{
+		"NotFound": {
+			ctx:     map[string]any{"other_key": time.Now()},
+			matches: false,
+		},
+		"InRangeOnWeekday": {
+			// Wednesday at noon
+			ctx:     map[string]any{"request_time": time.Date(2025, 7, 9, 12, 0, 0, 0, time.UTC)},
+			matches: true,
+		},
+		"StartOfRange": {
+			// Monday at 9:00 AM
+			ctx:     map[string]any{"request_time": time.Date(2025, 7, 7, 9, 0, 0, 0, time.UTC)},
+			matches: true,
+		},
+		"EndOfRangeExclusive": {
+			// Monday at 5:00 PM (17:00) should be exclusive, so no match
+			ctx:     map[string]any{"request_time": time.Date(2025, 7, 7, 17, 0, 0, 0, time.UTC)},
+			matches: false,
+		},
+		"JustBeforeEndOfRange": {
+			// Monday at 4:59:59 PM
+			ctx:     map[string]any{"request_time": time.Date(2025, 7, 7, 16, 59, 59, 0, time.UTC)},
+			matches: true,
+		},
+		"OutOfRangeBefore": {
+			// Monday at 8:59 AM
+			ctx:     map[string]any{"request_time": time.Date(2025, 7, 7, 8, 59, 59, 0, time.UTC)},
+			matches: false,
+		},
+		"OutOfRangeOnWeekend": {
+			// Saturday at noon
+			ctx:     map[string]any{"request_time": time.Date(2025, 7, 5, 12, 0, 0, 0, time.UTC)},
+			matches: false,
+		},
+	} {
+		t.Run(tName, func(t *testing.T) {
+			assert.Equal(t, tCase.matches, rule.Matches(tCase.ctx))
+		})
+	}
+}
+
+func TestCronRule_WithEmptyKey(t *testing.T) {
+	t.Run("AlwaysOn", func(t *testing.T) {
+		// This rule should always be active because it fires every minute and lasts
+		// for 2 minutes.
+		rule := &CronRule{
+			Key:       "", // Use time.Now()
+			CronSpec:  "* * * * *",
+			Duration:  2 * time.Minute,
+			VariantID: "always_on",
+			ValueData: true,
+		}
+		assert.True(t, rule.Matches(nil), "Rule that is always on should match")
+	})
+
+	t.Run("AlwaysOff", func(t *testing.T) {
+		// This rule should never be active because it has a zero duration.
+		// The next activation will always be after the current time.
+		rule := &CronRule{
+			Key:       "", // Use time.Now()
+			CronSpec:  "* * * * *",
+			Duration:  0,
+			VariantID: "always_off",
+			ValueData: false,
+		}
+		assert.False(t, rule.Matches(nil), "Rule with zero duration should not match")
+	})
 }

@@ -10,6 +10,9 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	semver "github.com/Masterminds/semver/v3"
+	cron "github.com/robfig/cron/v3"
 )
 
 // ExactMatchRule fires if ctx[Key] deep‐equals ValueData.
@@ -352,3 +355,111 @@ func (r *DateTimeRule) Matches(ctx map[string]any) bool {
 
 func (r *DateTimeRule) Value() any      { return r.ValueData }
 func (r *DateTimeRule) Variant() string { return r.VariantID }
+
+type SemVerRule struct {
+	Key        string
+	Constraint string // e.g., ">= 1.2.3, < 2.0.0" or "~2.3.4"
+
+	VariantID string
+	ValueData any
+}
+
+func (r *SemVerRule) Matches(ctx map[string]any) bool {
+	raw, ok := ctx[r.Key].(string)
+	if !ok {
+		return false
+	}
+
+	c, err := semver.NewConstraint(r.Constraint)
+	if err != nil {
+		slog.Error("invalid semver constraint", "constraint", r.Constraint, "error", err)
+		return false
+	}
+
+	v, err := semver.NewVersion(raw)
+	if err != nil {
+		// The value in the context is not a valid version string, so it cannot match.
+		return false
+	}
+
+	// Check if the version satisfies the constraint.
+	return c.Check(v)
+}
+
+// CronRule fires if a time falls within a recurring window. The window starts
+// at a time defined by the CronSpec and lasts for the specified Duration.
+//
+// The time to be checked can be provided in two ways:
+//  1. From the context: If Key is set, the rule will look for a time.Time
+//     value in ctx[Key].
+//  2. From the system clock: If Key is an empty string (""), the rule will
+//     use time.Now() as the time to check.
+//
+// **Important Note on Time-Sensitive Workflows:**
+// Using the system clock (by leaving Key empty) is convenient but has drawbacks.
+// It makes the rule's outcome non-deterministic and hard to test. A test might
+// pass or fail depending on the exact moment it is run.
+//
+// For critical, reproducible, or easily testable workflows, it is highly
+// recommended to pass a specific time via the context map. This allows you to
+// control the "current" time during tests and ensures that re-evaluating the
+// same context will always yield the same result.
+type CronRule struct {
+	Key      string        // Optional. If empty, time.Now() is used.
+	CronSpec string        // e.g., "0 9 * * MON-FRI" for 9:00 AM on weekdays.
+	Duration time.Duration // e.g., 8 * time.Hour for an 8-hour window.
+
+	// schedule is not serialized, but compiled on demand from CronSpec.
+	schedule cron.Schedule `json:"-" bson:"-"`
+
+	VariantID string
+	ValueData any
+}
+
+func (r *CronRule) Matches(ctx map[string]any) bool {
+	var checkTime time.Time
+	var ok bool
+
+	// If Key is empty, use time.Now(). Otherwise, get the time from the context.
+	if r.Key == "" {
+		checkTime = time.Now()
+		ok = true
+	} else {
+		var raw any
+		raw, ok = ctx[r.Key]
+		if ok {
+			checkTime, ok = raw.(time.Time)
+		}
+	}
+
+	if !ok {
+		// This fails if the key was not found or the value was not a time.Time.
+		return false
+	}
+
+	// Compile the cron schedule on first use (and cache it).
+	if r.schedule == nil {
+		p := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+		var err error
+		r.schedule, err = p.Parse(r.CronSpec)
+		if err != nil {
+			slog.Error("invalid cron spec", "key", r.Key, "spec", r.CronSpec, "error", err)
+			return false
+		}
+	}
+
+	// Find the most recent activation time for the schedule.
+	// We look for the next activation *after* the start of our potential window.
+	windowStart := checkTime.Add(-r.Duration)
+	previousOrNextActivation := r.schedule.Next(windowStart)
+
+	if previousOrNextActivation.IsZero() {
+		return false // No scheduled times found for this spec.
+	}
+
+	// The checkTime is inside the window if the last activation was not after it.
+	return !previousOrNextActivation.After(checkTime)
+}
+
+func (r *CronRule) Value() any      { return r.ValueData }
+func (r *CronRule) Variant() string { return r.VariantID }
