@@ -81,6 +81,8 @@ type ConcreteRule struct {
 	IPRangeRule    *IPRangeRule    `bson:"ipRangeRule,omitempty" json:"ipRangeRule,omitempty"`
 	GeoFenceRule   *GeoFenceRule   `bson:"geoFenceRule,omitempty" json:"geoFenceRule,omitempty"`
 	DateTimeRule   *DateTimeRule   `bson:"dateTimeRule,omitempty" json:"dateTimeRule,omitempty"`
+	SemVerRule     *SemVerRule     `bson:"semVerRule,omitempty" json:"semVerRule,omitempty"`
+	CronRule       *CronRule       `bson:"cronRule,omitempty" json:"cronRule,omitempty"`
 
 	// Control rules
 	AndRule *AndRule `bson:"andRule,omitempty" json:"andRule,omitempty"`
