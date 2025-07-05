@@ -21,6 +21,12 @@ type Cache struct {
 	cache      map[string]flag.Definition
 }
 
+func (c *Cache) Clear() {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+	c.cache = make(map[string]flag.Definition)
+}
+
 func (c *Cache) Set(flagKey string, definition any) error {
 	parsedDefinition, ok := definition.(flag.Definition)
 	if ok {

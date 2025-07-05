@@ -58,6 +58,7 @@ func NewProvider(opts *Options) (*SingleDocumentProvider, error) {
 				return fmt.Errorf("change document ID does not match expected ID: %v != %v", id, p.documentID)
 			}
 			delete(event.FullDocument, "_id")
+			p.cache.Clear()
 
 			for key, value := range event.FullDocument {
 				if err := p.cache.Set(key, value); err != nil {
