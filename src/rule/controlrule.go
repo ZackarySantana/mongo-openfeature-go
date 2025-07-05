@@ -7,9 +7,9 @@ import (
 
 // AndRule matches if ALL children match; Variant = "&(v1+v2+…)".
 type AndRule struct {
-	Rules    []ConcreteRule
-	Priority int
+	Rules []ConcreteRule
 
+	Priority  int
 	ValueData any
 }
 
@@ -36,9 +36,9 @@ func (r *AndRule) GetPriority() int { return r.Priority }
 
 // OrRule matches if ANY child matches; Variant = "|(v1+v2+…)".
 type OrRule struct {
-	Rules    []ConcreteRule
-	Priority int
+	Rules []ConcreteRule
 
+	Priority  int
 	ValueData any
 }
 
@@ -65,9 +65,9 @@ func (r *OrRule) GetPriority() int { return r.Priority }
 
 // NotRule inverts a single child; Variant = "!(v)".
 type NotRule struct {
-	Rule     ConcreteRule
-	Priority int
+	Rule ConcreteRule
 
+	Priority  int
 	ValueData any
 }
 
@@ -81,8 +81,8 @@ func (r *NotRule) GetPriority() int { return r.Priority }
 
 type OverrideRule struct {
 	ValueData any
-	Priority  int
 
+	Priority  int
 	VariantID string
 }
 

@@ -19,9 +19,9 @@ import (
 type ExactMatchRule struct {
 	Key      string
 	KeyValue string
-	Priority int
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -38,12 +38,12 @@ func (r *ExactMatchRule) GetPriority() int { return r.Priority }
 type RegexRule struct {
 	Key           string
 	RegexpPattern string
-	Priority      int
 	// Regexp is not serialized, but compiled on demand.
 	// This is to avoid the overhead of compiling the regex on every match.
 	Regexp *regexp.Regexp `json:"-" bson:"-"`
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -71,10 +71,10 @@ func (r *RegexRule) GetPriority() int { return r.Priority }
 
 // ExistsRule fires if ctx contains Key at all.
 type ExistsRule struct {
-	Key      string
-	Priority int
+	Key string
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -91,9 +91,9 @@ func (r *ExistsRule) GetPriority() int { return r.Priority }
 type FractionalRule struct {
 	Key        string
 	Percentage float64 // in [0.0,100.0)
-	Priority   int
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -117,9 +117,9 @@ type RangeRule struct {
 	Key                        string
 	Min, Max                   float64
 	ExclusiveMin, ExclusiveMax bool
-	Priority                   int
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -164,11 +164,11 @@ func (r *RangeRule) GetPriority() int { return r.Priority }
 
 // InListRule fires if ctx[Key] is deep equal to one of Items.
 type InListRule struct {
-	Key      string
-	Items    []any
-	Priority int
+	Key   string
+	Items []any
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -191,11 +191,11 @@ func (r *InListRule) GetPriority() int { return r.Priority }
 
 // PrefixRule fires if ctx[Key] (string) has the given prefix.
 type PrefixRule struct {
-	Key      string
-	Prefix   string
-	Priority int
+	Key    string
+	Prefix string
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -214,11 +214,11 @@ func (r *PrefixRule) GetPriority() int { return r.Priority }
 
 // SuffixRule fires if ctx[Key] (string) has the given suffix.
 type SuffixRule struct {
-	Key      string
-	Suffix   string
-	Priority int
+	Key    string
+	Suffix string
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -239,9 +239,9 @@ func (r *SuffixRule) GetPriority() int { return r.Priority }
 type ContainsRule struct {
 	Key       string
 	Substring string
-	Priority  int
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -260,11 +260,11 @@ func (r *ContainsRule) GetPriority() int { return r.Priority }
 
 // IPRangeRule fires if ctx[Key] (string) parses as an IP in any of CIDRs.
 type IPRangeRule struct {
-	Key      string
-	CIDRs    []string
-	Priority int
+	Key   string
+	CIDRs []string
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -295,9 +295,9 @@ type GeoFenceRule struct {
 	LatKey, LngKey       string
 	LatCenter, LngCenter float64
 	RadiusMeters         float64
-	Priority             int
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -359,12 +359,12 @@ func (r *GeoFenceRule) GetPriority() int { return r.Priority }
 
 // DateTimeRule fires if ctx[Key] (time.Time) is between After and Before.
 type DateTimeRule struct {
-	Key      string
-	After    time.Time
-	Before   time.Time
-	Priority int
+	Key    string
+	After  time.Time
+	Before time.Time
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -383,9 +383,9 @@ func (r *DateTimeRule) GetPriority() int { return r.Priority }
 type SemVerRule struct {
 	Key        string
 	Constraint string // e.g., ">= 1.2.3, < 2.0.0" or "~2.3.4"
-	Priority   int
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
@@ -437,12 +437,12 @@ type CronRule struct {
 	Key      string        // Optional. If empty, time.Now() is used.
 	CronSpec string        // e.g., "0 9 * * MON-FRI" for 9:00 AM on weekdays.
 	Duration time.Duration // e.g., 8 * time.Hour for an 8-hour window.
-	Priority int
 
 	// schedule is not serialized, but compiled on demand from CronSpec.
 	schedule cron.Schedule `json:"-" bson:"-"`
 
 	VariantID string
+	Priority  int
 	ValueData any
 }
 
