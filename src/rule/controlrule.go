@@ -69,23 +69,23 @@ func (r *NotRule) Value() any      { return r.ValueData }
 func (r *NotRule) Variant() string { return "!(" + r.Rule.Variant() + ")" }
 
 type ConcreteRule struct {
-	ExactMatchRule *ExactMatchRule
-	RegexRule      *RegexRule
-	ExistsRule     *ExistsRule
-	FractionalRule *FractionalRule
-	RangeRule      *RangeRule
-	InListRule     *InListRule
-	PrefixRule     *PrefixRule
-	SuffixRule     *SuffixRule
-	ContainsRule   *ContainsRule
-	IPRangeRule    *IPRangeRule
-	GeoFenceRule   *GeoFenceRule
-	DateTimeRule   *DateTimeRule
+	ExactMatchRule *ExactMatchRule `bson:"exactMatchRule,omitempty" json:"exactMatchRule,omitempty"`
+	RegexRule      *RegexRule      `bson:"regexRule,omitempty" json:"regexRule,omitempty"`
+	ExistsRule     *ExistsRule     `bson:"existsRule,omitempty" json:"existsRule,omitempty"`
+	FractionalRule *FractionalRule `bson:"fractionalRule,omitempty" json:"fractionalRule,omitempty"`
+	RangeRule      *RangeRule      `bson:"rangeRule,omitempty" json:"rangeRule,omitempty"`
+	InListRule     *InListRule     `bson:"inListRule,omitempty" json:"inListRule,omitempty"`
+	PrefixRule     *PrefixRule     `bson:"prefixRule,omitempty" json:"prefixRule,omitempty"`
+	SuffixRule     *SuffixRule     `bson:"suffixRule,omitempty" json:"suffixRule,omitempty"`
+	ContainsRule   *ContainsRule   `bson:"containsRule,omitempty" json:"containsRule,omitempty"`
+	IPRangeRule    *IPRangeRule    `bson:"ipRangeRule,omitempty" json:"ipRangeRule,omitempty"`
+	GeoFenceRule   *GeoFenceRule   `bson:"geoFenceRule,omitempty" json:"geoFenceRule,omitempty"`
+	DateTimeRule   *DateTimeRule   `bson:"dateTimeRule,omitempty" json:"dateTimeRule,omitempty"`
 
 	// Control rules
-	AndRule *AndRule
-	OrRule  *OrRule
-	NotRule *NotRule
+	AndRule *AndRule `bson:"andRule,omitempty" json:"andRule,omitempty"`
+	OrRule  *OrRule  `bson:"orRule,omitempty" json:"orRule,omitempty"`
+	NotRule *NotRule `bson:"notRule,omitempty" json:"notRule,omitempty"`
 }
 
 func (c *ConcreteRule) Matches(ctx map[string]any) bool {
