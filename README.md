@@ -432,21 +432,20 @@ docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> zackarysantana/mongo-o
 #### Editor Examples
 
 Main page:
-![light mode](https://github.com/user-attachments/assets/9455ff83-73c0-47ed-8f52-32571b518017)
-![dark mode](https://github.com/user-attachments/assets/4c51db48-81f0-4b3d-93e0-b7a3567f9088)
+![dark mode](https://github.com/user-attachments/assets/0de6729b-20d0-4a6d-98ed-8658e03e6e15)
+![light mode](https://github.com/user-attachments/assets/82beb6da-b9af-4e43-8ca1-e27d80015a4a)
 
 Flag Editing:
-![light mode](https://github.com/user-attachments/assets/7699d435-fd6e-4fbe-a09e-5c5abc775812)
-![dark mode](https://github.com/user-attachments/assets/e220d81e-e7f0-45c2-bcf9-b6a8fd1905c9)
+![dark mode](https://github.com/user-attachments/assets/d082300a-f2fd-4498-92bd-d928c45f80aa)
+![light mode](https://github.com/user-attachments/assets/ef545a6a-3640-4254-84b7-ab1d94158e55)
 
 Control Rule Editing:
-![light mode](https://github.com/user-attachments/assets/b7930f5f-dda1-4cf5-bbc1-fe7f9f9e1e26)
-![dark mode](https://github.com/user-attachments/assets/00308fae-56a0-4f56-b43a-1d26eedbbab5)
+![dark mode](https://github.com/user-attachments/assets/bbbfbfb0-96eb-498b-a332-7181597ffc44)
+![light mode](https://github.com/user-attachments/assets/c100952c-197d-4894-a86d-a59a4449d052)
 
 Creating a New Flag:
-![ligjt mode](https://github.com/user-attachments/assets/5205547a-8717-4654-a392-ff51cdab837c)
-![dark mode](https://github.com/user-attachments/assets/ff7b9b1b-138e-4963-9744-92b41a3acc31)
-
+![dark mode](https://github.com/user-attachments/assets/d197a989-658a-4c11-8ac4-f150e826e333)
+![light mode](https://github.com/user-attachments/assets/f8cc4733-9260-44ac-b244-fbdda2169365)
 ### AI Usage
 
 Most of the Go code (that isn't tests), is not AI generated. I used GitHub inline suggestions and occasionally the chat for some Go code boilerplate. Most of the tests are AI generated/assisted. The editor is 99% AI generated because it wasn't my focus with this project and I just wanted something that worked.
