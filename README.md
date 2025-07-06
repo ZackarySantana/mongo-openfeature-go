@@ -56,7 +56,10 @@ The provider stores the flags in a particular way, so creating a provider also g
 ```go
 import "github.com/zackarysantana/mongo-openfeature-go/src/flag"
 // Some provider creation code
-provider, ofClient, err := mongoprovider.New(mongoprovider.NewOptions(mongoClient, database, collection).WithDocumentID(documentID))
+provider, ofClient, err := mongoprovider.New(
+    mongoprovider.NewOptions(mongoClient, database, collection).
+        WithDocumentID(documentID),
+)
 // ...
 
 // Construct a flag definition with rules
