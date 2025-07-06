@@ -28,10 +28,15 @@ import (
 // ...
 
 // Multi-document mode
-provider, ofClient, err := mongoprovider.New(mongoprovider.NewOptions(mongoClient, database, collection))
+provider, ofClient, err := mongoprovider.New(
+    mongoprovider.NewOptions(mongoClient, database, collection),
+)
 
 // Single document mode
-provider, ofClient, err := mongoprovider.New(mongoprovider.NewOptions(mongoClient, database, collection).WithDocumentID(documentID))
+provider, ofClient, err := mongoprovider.New(
+    mongoprovider.NewOptions(mongoClient, database, collection).
+        WithDocumentID(documentID),
+)
 ```
 
 Set the provider in your application, and use the OpenFeature client:
