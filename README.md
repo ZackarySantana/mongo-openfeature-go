@@ -429,6 +429,20 @@ or you can use the Docker image:
 docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> zackarysantana/mongo-openfeature-go-editor
 ```
 
+#### Editor Examples
+
+Main page:
+![main page](https://github.com/user-attachments/assets/0c46a459-5761-4b56-b521-279a55940c34)
+
+Flag Editing:
+![flag editing](https://github.com/user-attachments/assets/6126b8d4-cb2c-44b9-a841-eafd08e44ef2)
+
+Control Rule Editing:
+![control rule editing](https://github.com/user-attachments/assets/e73d53d7-50b5-44bb-a450-e8e492819e7c)
+
+Creating a New Flag:
+![creating a new flag](https://github.com/user-attachments/assets/f3d1b363-fe0a-4860-86d1-444cbb46e4a7)
+
 ### AI Usage
 
 Most of the Go code (that isn't tests), is not AI generated. I used GitHub inline suggestions and occasionally the chat for some Go code boilerplate. Most of the tests are AI generated/assisted. The editor is 99% AI generated because it wasn't my focus with this project and I just wanted something that worked.
