@@ -23,4 +23,8 @@ FROM debian AS prod
 
 COPY --from=base-prod /app/binary /root/binary
 
+# Copy tmpl files
+COPY --from=base-prod /app/internal/editor/*.tmpl /root/internal/editor/
+
+WORKDIR /root
 CMD ["/root/binary"]
