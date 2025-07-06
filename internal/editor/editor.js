@@ -1,69 +1,74 @@
+// internal/editor/editor.js
+
 // This script will be run on the edit page to build the dynamic form.
 document.addEventListener("DOMContentLoaded", () => {
     const rulesTextarea = document.getElementById("rules");
     const builderContainer = document.getElementById("rule-builder");
 
-    // Hide the original textarea, as it's now just for data transfer.
+    if (!rulesTextarea || !builderContainer) {
+        return; // Not on the edit page
+    }
+
     rulesTextarea.style.display = "none";
 
     let state = [];
     try {
-        state = JSON.parse(rulesTextarea.value);
+        const parsedJSON = JSON.parse(rulesTextarea.value);
+        if (Array.isArray(parsedJSON)) {
+            state = parsedJSON;
+        } else {
+            state = [];
+        }
     } catch (e) {
         console.error("Invalid initial JSON for rules:", e);
         state = [];
     }
 
-    // Initial render
     render();
 
     function render() {
-        builderContainer.innerHTML = ""; // Clear the container
-        const rootList = createRuleList(state, "root");
+        builderContainer.innerHTML = "";
+        const rootList = createRuleList(state, { hideValueData: false });
         builderContainer.appendChild(rootList);
         syncTextarea();
     }
 
-    function createRuleList(rules, path) {
+    function createRuleList(rulesArray, options = {}) {
         const listContainer = document.createElement("div");
         listContainer.className = "rule-list";
 
-        if (rules && rules.length > 0) {
-            rules.forEach((rule, index) => {
+        if (rulesArray && rulesArray.length > 0) {
+            rulesArray.forEach((ruleData, index) => {
                 const ruleElement = createRuleElement(
-                    rule,
-                    `${path}[${index}]`
+                    ruleData,
+                    rulesArray,
+                    index,
+                    options
                 );
                 listContainer.appendChild(ruleElement);
             });
         }
 
-        // "Add Rule" button for this list
-        listContainer.appendChild(createAddRuleButton(rules, path));
+        listContainer.appendChild(createAddRuleButton(rulesArray));
         return listContainer;
     }
 
-    function createRuleElement(ruleData, path) {
+    function createRuleElement(ruleData, parentArray, index, options = {}) {
         const wrapper = document.createElement("div");
         wrapper.className = "rule-element";
 
-        const ruleType = Object.keys(ruleData)[0];
-        const rule = ruleData[ruleType];
+        const ruleTypeKey = Object.keys(ruleData)[0];
+        const rule = ruleData[ruleTypeKey];
 
         const header = document.createElement("div");
         header.className = "rule-header";
-        header.innerHTML = `<strong>${ruleType}</strong>`;
+        header.innerHTML = `<strong>${ruleTypeKey}</strong>`;
 
         const deleteBtn = document.createElement("button");
         deleteBtn.type = "button";
         deleteBtn.className = "delete-rule-btn";
         deleteBtn.innerText = "Delete";
         deleteBtn.onclick = () => {
-            // To delete, we get the parent array and the index from the path
-            const parts = path.match(/(.*)\[(\d+)\]/);
-            const parentPath = parts[1];
-            const index = parseInt(parts[2], 10);
-            const parentArray = getObjectFromPath(parentPath);
             parentArray.splice(index, 1);
             render();
         };
@@ -74,160 +79,221 @@ document.addEventListener("DOMContentLoaded", () => {
         content.className = "rule-content";
         wrapper.appendChild(content);
 
-        // Render specific fields for the rule type
-        switch (ruleType) {
-            case "ExactMatchRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+        // Generate a unique ID for this rule's parent computed field, if it's a composite rule.
+        const computedVariantId = `computed-variant-${Math.random()}`;
+
+        switch (ruleTypeKey) {
+            case "exactMatchRule":
                 content.appendChild(
-                    createTextField("KeyValue", rule, "KeyValue", path)
+                    createTextField("Key", rule, "Key", options)
+                );
+                content.appendChild(
+                    createTextField("KeyValue", rule, "KeyValue", options)
                 );
                 break;
-            case "RegexRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "regexRule":
+                content.appendChild(
+                    createTextField("Key", rule, "Key", options)
+                );
                 content.appendChild(
                     createTextField(
                         "RegexpPattern",
                         rule,
                         "RegexpPattern",
-                        path
+                        options
                     )
                 );
                 break;
-            case "ExistsRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
-                break;
-            case "FractionalRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "existsRule":
                 content.appendChild(
-                    createNumberField("Percentage", rule, "Percentage", path)
+                    createTextField("Key", rule, "Key", options)
                 );
                 break;
-            case "RangeRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "fractionalRule":
                 content.appendChild(
-                    createNumberField("Min", rule, "Min", path)
+                    createTextField("Key", rule, "Key", options)
                 );
                 content.appendChild(
-                    createNumberField("Max", rule, "Max", path)
-                );
-                content.appendChild(
-                    createCheckbox("ExclusiveMin", rule, "ExclusiveMin", path)
-                );
-                content.appendChild(
-                    createCheckbox("ExclusiveMax", rule, "ExclusiveMax", path)
+                    createNumberField("Percentage", rule, "Percentage", options)
                 );
                 break;
-            case "InListRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "rangeRule":
+                content.appendChild(
+                    createTextField("Key", rule, "Key", options)
+                );
+                content.appendChild(
+                    createNumberField("Min", rule, "Min", options)
+                );
+                content.appendChild(
+                    createNumberField("Max", rule, "Max", options)
+                );
+                content.appendChild(
+                    createCheckbox(
+                        "ExclusiveMin",
+                        rule,
+                        "ExclusiveMin",
+                        options
+                    )
+                );
+                content.appendChild(
+                    createCheckbox(
+                        "ExclusiveMax",
+                        rule,
+                        "ExclusiveMax",
+                        options
+                    )
+                );
+                break;
+            case "inListRule":
+                content.appendChild(
+                    createTextField("Key", rule, "Key", options)
+                );
                 content.appendChild(
                     createJsonTextField(
                         "Items (JSON Array)",
                         rule,
                         "Items",
-                        path
+                        options
                     )
                 );
                 break;
-            case "PrefixRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "prefixRule":
                 content.appendChild(
-                    createTextField("Prefix", rule, "Prefix", path)
+                    createTextField("Key", rule, "Key", options)
+                );
+                content.appendChild(
+                    createTextField("Prefix", rule, "Prefix", options)
                 );
                 break;
-            case "SuffixRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "suffixRule":
                 content.appendChild(
-                    createTextField("Suffix", rule, "Suffix", path)
+                    createTextField("Key", rule, "Key", options)
+                );
+                content.appendChild(
+                    createTextField("Suffix", rule, "Suffix", options)
                 );
                 break;
-            case "ContainsRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "containsRule":
                 content.appendChild(
-                    createTextField("Substring", rule, "Substring", path)
+                    createTextField("Key", rule, "Key", options)
+                );
+                content.appendChild(
+                    createTextField("Substring", rule, "Substring", options)
                 );
                 break;
-            case "IPRangeRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "ipRangeRule":
+                content.appendChild(
+                    createTextField("Key", rule, "Key", options)
+                );
                 content.appendChild(
                     createJsonTextField(
                         "CIDRs (JSON Array)",
                         rule,
                         "CIDRs",
-                        path
+                        options
                     )
                 );
                 break;
-            case "GeoFenceRule":
+            case "geoFenceRule":
                 content.appendChild(
-                    createTextField("LatKey", rule, "LatKey", path)
+                    createTextField("LatKey", rule, "LatKey", options)
                 );
                 content.appendChild(
-                    createTextField("LngKey", rule, "LngKey", path)
+                    createTextField("LngKey", rule, "LngKey", options)
                 );
                 content.appendChild(
-                    createNumberField("LatCenter", rule, "LatCenter", path)
+                    createNumberField("LatCenter", rule, "LatCenter", options)
                 );
                 content.appendChild(
-                    createNumberField("LngCenter", rule, "LngCenter", path)
+                    createNumberField("LngCenter", rule, "LngCenter", options)
                 );
                 content.appendChild(
                     createNumberField(
                         "RadiusMeters",
                         rule,
                         "RadiusMeters",
-                        path
+                        options
                     )
                 );
                 break;
-            case "DateTimeRule":
-                content.appendChild(createTextField("Key", rule, "Key", path));
+            case "dateTimeRule":
                 content.appendChild(
-                    createDateTimeField("After (RFC3339)", rule, "After", path)
+                    createTextField("Key", rule, "Key", options)
+                );
+                content.appendChild(
+                    createDateTimeField(
+                        "After (RFC3339)",
+                        rule,
+                        "After",
+                        options
+                    )
                 );
                 content.appendChild(
                     createDateTimeField(
                         "Before (RFC3339)",
                         rule,
                         "Before",
-                        path
+                        options
                     )
                 );
                 break;
-            // Recursive cases
-            case "AndRule":
-            case "OrRule":
+            case "andRule":
+            case "orRule":
                 content.appendChild(
-                    createRuleList(rule.Rules, `${path}.${ruleType}.Rules`)
+                    createRuleList(rule.Rules, {
+                        hideValueData: true,
+                        parentComputedVariantId: computedVariantId,
+                        parentRuleData: ruleData,
+                    })
                 );
                 break;
-            case "NotRule":
-                // 'Not' is special, it contains a single rule, not a list.
-                const notContent = createRuleElement(
-                    rule.Rule,
-                    `${path}.${ruleType}.Rule`
-                );
-                notContent.className = "rule-element nested";
-                content.appendChild(notContent);
+            case "notRule":
+                const notWrapper = { Rule: [rule.Rule] };
+                const notList = createRuleList(notWrapper.Rule, {
+                    hideValueData: true,
+                    parentComputedVariantId: computedVariantId,
+                    parentRuleData: ruleData,
+                });
+                notList.className = "rule-list nested";
+                content.appendChild(notList);
                 break;
         }
 
-        // All rules have VariantID and ValueData
-        if (ruleType !== "AndRule" && ruleType !== "OrRule") {
+        if (["andRule", "orRule", "notRule"].includes(ruleTypeKey)) {
+            const computedVariant = getComputedVariant(ruleData);
             content.appendChild(
-                createTextField("VariantID", rule, "VariantID", path)
+                createComputedTextField(
+                    "Computed VariantID",
+                    computedVariant,
+                    computedVariantId
+                )
+            );
+        } else {
+            content.appendChild(
+                createTextField("VariantID", rule, "VariantID", options)
             );
         }
-        content.appendChild(
-            createJsonTextField("ValueData (JSON)", rule, "ValueData", path)
-        );
+
+        if (
+            !options.hideValueData ||
+            ["andRule", "orRule", "notRule"].includes(ruleTypeKey)
+        ) {
+            content.appendChild(
+                createJsonTextField(
+                    "ValueData (JSON)",
+                    rule,
+                    "ValueData",
+                    options
+                )
+            );
+        }
 
         return wrapper;
     }
 
-    function createAddRuleButton(parentArray, path) {
+    function createAddRuleButton(parentArray) {
         const container = document.createElement("div");
         container.className = "add-rule-container";
-
         const select = document.createElement("select");
         const ruleTypes = [
             "ExactMatchRule",
@@ -252,31 +318,28 @@ document.addEventListener("DOMContentLoaded", () => {
             option.innerText = type;
             select.appendChild(option);
         });
-
         const addBtn = document.createElement("button");
         addBtn.type = "button";
         addBtn.innerText = "Add Rule";
         addBtn.onclick = () => {
             const type = select.value;
-            const newRule = { [type]: {} };
-            // Add default structures for composite rules
+            const key = type.charAt(0).toLowerCase() + type.slice(1);
+            const newRule = { [key]: {} };
+
             if (type === "AndRule" || type === "OrRule") {
-                newRule[type].Rules = [];
+                newRule[key].Rules = [];
             }
             if (type === "NotRule") {
-                // Default to adding an empty ExistsRule inside Not
-                newRule[type].Rule = { ExistsRule: {} };
+                newRule[key].Rule = { existsRule: {} };
             }
             parentArray.push(newRule);
             render();
         };
-
         container.appendChild(select);
         container.appendChild(addBtn);
         return container;
     }
 
-    // --- Field creation helpers ---
     function createField(label, child) {
         const div = document.createElement("div");
         div.className = "form-field";
@@ -287,30 +350,47 @@ document.addEventListener("DOMContentLoaded", () => {
         return div;
     }
 
-    function createTextField(label, obj, key, path) {
+    function createTextField(label, obj, key, options = {}) {
         const input = document.createElement("input");
         input.type = "text";
         input.value = obj[key] || "";
         input.oninput = (e) => {
             obj[key] = e.target.value;
             syncTextarea();
+            // If this field is a VariantID inside a composite rule, update the parent.
+            if (key === "VariantID" && options.parentComputedVariantId) {
+                updateComputedVariant(
+                    options.parentComputedVariantId,
+                    options.parentRuleData
+                );
+            }
         };
         return createField(label, input);
     }
 
-    function createNumberField(label, obj, key, path) {
+    function createComputedTextField(label, value, id) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.id = id; // Assign the unique ID
+        input.value = value;
+        input.readOnly = true;
+        input.style.backgroundColor = "#e9ecef";
+        return createField(label, input);
+    }
+
+    function createNumberField(label, obj, key, options = {}) {
         const input = document.createElement("input");
         input.type = "number";
         input.step = "any";
         input.value = obj[key] || 0;
         input.oninput = (e) => {
-            obj[key] = parseFloat(e.target.value);
+            obj[key] = parseFloat(e.target.value) || 0;
             syncTextarea();
         };
         return createField(label, input);
     }
 
-    function createCheckbox(label, obj, key, path) {
+    function createCheckbox(label, obj, key, options = {}) {
         const input = document.createElement("input");
         input.type = "checkbox";
         input.checked = obj[key] || false;
@@ -321,7 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return createField(label, input);
     }
 
-    function createDateTimeField(label, obj, key, path) {
+    function createDateTimeField(label, obj, key, options = {}) {
         const input = document.createElement("input");
         input.type = "text";
         input.placeholder = "YYYY-MM-DDTHH:MM:SSZ";
@@ -333,7 +413,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return createField(label, input);
     }
 
-    function createJsonTextField(label, obj, key, path) {
+    function createJsonTextField(label, obj, key, options = {}) {
         const input = document.createElement("textarea");
         input.className = "json-input";
         input.value = JSON.stringify(obj[key], null, 2) || "";
@@ -349,25 +429,33 @@ document.addEventListener("DOMContentLoaded", () => {
         return createField(label, input);
     }
 
-    // --- State management helpers ---
     function syncTextarea() {
         rulesTextarea.value = JSON.stringify(state, null, 2);
     }
 
-    function getObjectFromPath(path) {
-        if (path === "root") return state;
-        return path
-            .replace(/^root\./, "")
-            .split(".")
-            .reduce(
-                (o, p) => {
-                    const match = p.match(/(\w+)\[(\d+)\]/);
-                    if (match) {
-                        return o[match[1]][parseInt(match[2], 10)];
-                    }
-                    return o[p];
-                },
-                { Rules: state }
-            );
+    function getComputedVariant(ruleData) {
+        const ruleTypeKey = Object.keys(ruleData)[0];
+        const rule = ruleData[ruleTypeKey];
+
+        switch (ruleTypeKey) {
+            case "andRule":
+                if (!rule.Rules || rule.Rules.length === 0) return "&()";
+                return `&(${rule.Rules.map(getComputedVariant).join("+")})`;
+            case "orRule":
+                if (!rule.Rules || rule.Rules.length === 0) return "|()";
+                return `|(${rule.Rules.map(getComputedVariant).join("+")})`;
+            case "notRule":
+                if (!rule.Rule) return "!()";
+                return `!(${getComputedVariant(rule.Rule)})`;
+            default:
+                return rule.VariantID || "";
+        }
+    }
+
+    function updateComputedVariant(elementId, parentRuleData) {
+        const parentElement = document.getElementById(elementId);
+        if (parentElement) {
+            parentElement.value = getComputedVariant(parentRuleData);
+        }
     }
 });
