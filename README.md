@@ -80,7 +80,7 @@ err := ofClient.SetFlag(context.TODO(), flagDefinition)
 // Now future calls to the flag will use the new definition.
 ```
 
-### Rules
+### Standard Rules
 
 Rules share common values, like Key, VariantID, Priority, and ValueData. For example, this ExactMatchRule:
 
@@ -96,7 +96,7 @@ rule.ExactMatchRule{
 
 Matches on the key 'user_id'. If it's matched, it will inform the OpenFeature SDK of it's 'VariantID' and 'ValueData'. It also has `Priority` of 100, which is used to determine which rule supercedes others when multiple rules match. Higher priority rules will take precedence over lower priority ones. The only exception is the [OverrideRule](#overriderule), which is documented under that rule.
 
-The list of rules includes:
+The list of standard rules includes:
 
 -   [ExactMatchRule](#exactmatchrule)
 -   [RegexRule](#regexrule)
@@ -112,6 +112,8 @@ The list of rules includes:
 -   [DateTimeRule](#datetimerule)
 -   [SemVerRule](#semverrule)
 -   [CronRule](#cronrule)
+
+There are also [control rules](#control-rules) that can be used to combine, negate, or override other rules:
 
 #### ExactMatchRule
 
@@ -306,6 +308,13 @@ Matches if the key `cron_schedule` (which should be a time.Time value) would be 
 ### Control Rules
 
 Control rules are used to combine, negate, or override other rules. They can be used to create complex conditions based on multiple rules.
+
+The control rules include:
+
+-   [AndRule](#andrule)
+-   [OrRule](#orrule)
+-   [NotRule](#notrule)
+-   [OverrideRule](#overriderule)
 
 #### AndRule
 
