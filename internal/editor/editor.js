@@ -52,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        // Only add the button if it's not disabled by the options.
         if (!options.disableAdd) {
             listContainer.appendChild(createAddRuleButton(rulesArray));
         }
@@ -68,7 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const header = document.createElement("div");
         header.className = "rule-header";
-        header.innerHTML = `<strong>${ruleTypeKey}</strong>`;
+
+        // FIX: Create the documentation link for the header.
+        const docLinkBase =
+            "https://github.com/ZackarySantana/mongo-openfeature-go?tab=readme-ov-file";
+        const docFragment = ruleTypeKey.toLowerCase();
+        const fullDocLink = `${docLinkBase}#${docFragment}`;
+        header.innerHTML = `
+      <a href="${fullDocLink}" target="_blank" title="View documentation for ${ruleTypeKey}">
+        <strong>${ruleTypeKey}</strong>
+      </a>
+    `;
 
         const deleteBtn = document.createElement("button");
         deleteBtn.type = "button";
@@ -254,13 +263,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
                 break;
             case "notRule":
-                // FIX: Conditionally disable the "Add Rule" button for the child list.
-                const notList = createRuleList(rule.Rule, {
+                const notWrapper = { Rule: rule.Rule };
+                const notList = createRuleList(notWrapper.Rule, {
                     hideValueData: true,
                     hidePriority: true,
                     parentComputedVariantId: computedVariantId,
                     parentRuleData: ruleData,
-                    disableAdd: rule.Rule && rule.Rule.length > 0,
+                    disableAdd: notWrapper.Rule && notWrapper.Rule.length > 0,
                 });
                 notList.className = "rule-list nested";
                 content.appendChild(notList);
@@ -347,7 +356,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 newRule[key].Rules = [];
             }
             if (type === "NotRule") {
-                // FIX: Initialize the child as an empty array to enforce the 0-or-1 constraint.
                 newRule[key].Rule = [];
             }
             parentArray.push(newRule);
@@ -462,7 +470,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!rule.Rules || rule.Rules.length === 0) return "|()";
                 return `|(${rule.Rules.map(getComputedVariant).join("+")})`;
             case "notRule":
-                // FIX: Get the variant from the first (and only) element of the Rule array.
                 if (!rule.Rule || rule.Rule.length === 0) return "!()";
                 return `!(${getComputedVariant(rule.Rule[0])})`;
             default:
