@@ -418,7 +418,7 @@ For a complete example, look at [cmd/example/main.go](cmd/example/main.go).
 Instead of manually creating flags (which can be done with some go code), you can use the editor in this repository to manage flags. To ues it, you can either clone this repo and run
 
 ```bash
-MONGODB_URI=<your_mongodb_uri> go run cmd/editor/main.go
+MONGODB_URI=<your_mongodb_uri> MONGODB_DATABASE=<your_database> MONGODB_COLLECTION=<your_collection> MONGODB_DOCUMENT_ID=<your_document_id> go run cmd/editor/main.go
 # or for Testing purposes
 USE_TESTCONTAINER=true go run cmd/editor/main.go
 ```
@@ -426,8 +426,15 @@ USE_TESTCONTAINER=true go run cmd/editor/main.go
 or you can use the Docker image:
 
 ```bash
-docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> zackarysantana/mongo-openfeature-go-editor
+docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> -e MONGODB_DATABASE=<your_database> -e MONGODB_COLLECTION=<your_collection> -e MONGODB_DOCUMENT_ID=<your_document_id> zackarysantana/mongo-openfeature-go-editor
 ```
+
+The default values if no environment variables are set are:
+
+-   `MONGODB_URI`: Will crash unless `USE_TESTCONTAINER` is set to `true`.
+-   `MONGODB_DATABASE`: `feature_flags`
+-   `MONGODB_COLLECTION`: `feature_flags`
+-   `MONGODB_DOCUMENT_ID`: `` (uses multi-document mode)
 
 #### Editor Examples
 
@@ -446,6 +453,7 @@ Control Rule Editing:
 Creating a New Flag:
 ![dark mode](https://github.com/user-attachments/assets/d197a989-658a-4c11-8ac4-f150e826e333)
 ![light mode](https://github.com/user-attachments/assets/f8cc4733-9260-44ac-b244-fbdda2169365)
+
 ### AI Usage
 
 Most of the Go code (that isn't tests), is not AI generated. I used GitHub inline suggestions and occasionally the chat for some Go code boilerplate. Most of the tests are AI generated/assisted. The editor is 99% AI generated because it wasn't my focus with this project and I just wanted something that worked.

@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	database   = "example_db"
-	collection = "flags"
+	database   = "feature_flags"
+	collection = "feature_flags"
 	documentID = ""
 )
 
