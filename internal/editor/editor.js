@@ -52,7 +52,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        listContainer.appendChild(createAddRuleButton(rulesArray));
+        // Only add the button if it's not disabled by the options.
+        if (!options.disableAdd) {
+            listContainer.appendChild(createAddRuleButton(rulesArray));
+        }
         return listContainer;
     }
 
@@ -251,17 +254,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
                 break;
             case "notRule":
-                const notWrapper = { Rule: [rule.Rule] };
-                const notList = createRuleList(notWrapper.Rule, {
+                // FIX: Conditionally disable the "Add Rule" button for the child list.
+                const notList = createRuleList(rule.Rule, {
                     hideValueData: true,
                     hidePriority: true,
                     parentComputedVariantId: computedVariantId,
                     parentRuleData: ruleData,
+                    disableAdd: rule.Rule && rule.Rule.length > 0,
                 });
                 notList.className = "rule-list nested";
                 content.appendChild(notList);
                 break;
-            // NEW: Add case for OverrideRule. It has no specific fields, so the case is empty.
             case "overrideRule":
                 break;
         }
@@ -324,7 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "AndRule",
             "OrRule",
             "NotRule",
-            "OverrideRule", // NEW: Add OverrideRule to the dropdown
+            "OverrideRule",
         ];
         ruleTypes.forEach((type) => {
             const option = document.createElement("option");
@@ -344,7 +347,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 newRule[key].Rules = [];
             }
             if (type === "NotRule") {
-                newRule[key].Rule = { existsRule: {} };
+                // FIX: Initialize the child as an empty array to enforce the 0-or-1 constraint.
+                newRule[key].Rule = [];
             }
             parentArray.push(newRule);
             render();
@@ -458,8 +462,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!rule.Rules || rule.Rules.length === 0) return "|()";
                 return `|(${rule.Rules.map(getComputedVariant).join("+")})`;
             case "notRule":
-                if (!rule.Rule) return "!()";
-                return `!(${getComputedVariant(rule.Rule)})`;
+                // FIX: Get the variant from the first (and only) element of the Rule array.
+                if (!rule.Rule || rule.Rule.length === 0) return "!()";
+                return `!(${getComputedVariant(rule.Rule[0])})`;
             default:
                 return rule.VariantID || "";
         }
