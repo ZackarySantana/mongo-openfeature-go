@@ -8,6 +8,7 @@ This repository is a MongoDB provider for the [OpenFeature Go SDK](https://openf
 -   [Control Rules](#control-rules)
 -   [Example](#example)
 -   [Editor](#editor)
+-   [AI Usage](#ai-usage)
 
 ## Features
 
@@ -427,3 +428,7 @@ or you can use the Docker image:
 ```bash
 docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> zackarysantana/mongo-openfeature-go-editor
 ```
+
+### AI Usage
+
+Most of the Go code (that isn't tests), is not AI generated. I used GitHub inline suggestions and occasionally the chat for some Go code boilerplate. Most of the tests are AI generated/assisted. The editor is 99% AI generated because it wasn't my focus with this project and I just wanted something that worked.
