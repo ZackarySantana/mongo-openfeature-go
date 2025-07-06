@@ -432,16 +432,20 @@ docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> zackarysantana/mongo-o
 #### Editor Examples
 
 Main page:
-![main page](https://github.com/user-attachments/assets/0c46a459-5761-4b56-b521-279a55940c34)
+![light mode](https://github.com/user-attachments/assets/9455ff83-73c0-47ed-8f52-32571b518017)
+![dark mode](https://github.com/user-attachments/assets/4c51db48-81f0-4b3d-93e0-b7a3567f9088)
 
 Flag Editing:
-![flag editing](https://github.com/user-attachments/assets/6126b8d4-cb2c-44b9-a841-eafd08e44ef2)
+![light mode](https://github.com/user-attachments/assets/7699d435-fd6e-4fbe-a09e-5c5abc775812)
+![dark mode](https://github.com/user-attachments/assets/e220d81e-e7f0-45c2-bcf9-b6a8fd1905c9)
 
 Control Rule Editing:
-![control rule editing](https://github.com/user-attachments/assets/e73d53d7-50b5-44bb-a450-e8e492819e7c)
+![light mode](https://github.com/user-attachments/assets/b7930f5f-dda1-4cf5-bbc1-fe7f9f9e1e26)
+![dark mode](https://github.com/user-attachments/assets/00308fae-56a0-4f56-b43a-1d26eedbbab5)
 
 Creating a New Flag:
-![creating a new flag](https://github.com/user-attachments/assets/f3d1b363-fe0a-4860-86d1-444cbb46e4a7)
+![ligjt mode](https://github.com/user-attachments/assets/5205547a-8717-4654-a392-ff51cdab837c)
+![dark mode](https://github.com/user-attachments/assets/ff7b9b1b-138e-4963-9744-92b41a3acc31)
 
 ### AI Usage
 
