@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/zackarysantana/mongo-openfeature-go/internal/editor"
 	"github.com/zackarysantana/mongo-openfeature-go/internal/testutil"
@@ -17,26 +16,24 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-const (
+var (
 	database   = "example_db"
-	collection = "flags" // The UI will manage the 'flags' collection
-	documentID = "feature_flags"
+	collection = "flags"
+	documentID = ""
 )
 
 func main() {
 	var mongoURI string
-	// Initialize cleanup to a no-op function to make it safe to call in any case.
-	var cleanup = func() {}
-	var err error
 
-	// 1. Conditionally set up the database connection.
 	if os.Getenv("USE_TESTCONTAINER") == "true" {
 		log.Println("USE_TESTCONTAINER is true, starting MongoDB container...")
-		cleanup, err = testutil.CreateMongoContainer(context.Background())
+		cleanup, err := testutil.CreateMongoContainer(context.Background())
 		if err != nil {
 			log.Fatalf("FATAL: creating MongoDB container: %v", err)
 		}
+		defer cleanup()
 		mongoURI = os.Getenv("MONGODB_ENDPOINT")
+		log.Println("Connecting to TestContainer Mongo at:", mongoURI)
 	} else {
 		log.Println("Using external MongoDB. Set MONGODB_URI to configure.")
 		mongoURI = os.Getenv("MONGODB_URI")
@@ -44,28 +41,31 @@ func main() {
 			log.Fatalf("FATAL: MONGODB_URI environment variable is not set and USE_TESTCONTAINER is not true.")
 		}
 	}
-	defer cleanup()
 
-	fmt.Println("Connecting to MongoDB at:", mongoURI)
-
-	// 2. Connect a mongo.Client to the determined URI.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	if db := os.Getenv("MONGODB_DATABASE"); db != "" {
+		database = db
+	}
+	if coll := os.Getenv("MONGODB_COLLECTION"); coll != "" {
+		collection = coll
+	}
+	if id := os.Getenv("MONGODB_DOCUMENT_ID"); id != "" {
+		documentID = id
+	}
 
 	mongoClient, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		log.Fatalf("FATAL: connecting to MongoDB: %v", err)
 	}
-	defer mongoClient.Disconnect(ctx)
+	defer mongoClient.Disconnect(context.Background())
 
 	// 3. Run the main application logic with the connected client.
-	if err := run(ctx, mongoClient); err != nil {
+	if err := run(mongoClient); err != nil {
 		log.Fatalf("FATAL: Application failed to run: %v", err)
 	}
 }
 
 // run configures and starts the web application.
-func run(ctx context.Context, mongoClient *mongo.Client) error {
+func run(mongoClient *mongo.Client) error {
 	ofClient, err := client.New(client.NewOptions(mongoClient, database, collection).WithDocumentID(documentID))
 	if err != nil {
 		return fmt.Errorf("creating MongoDB OpenFeature client: %w", err)
@@ -118,14 +118,13 @@ func run(ctx context.Context, mongoClient *mongo.Client) error {
 					},
 					ValueData: "and_default",
 				}},
-				// {OverrideRule: &rule.OverrideRule{
-				// 	VariantID: "override-rule",
-				// 	ValueData: "override_default",
-				// }},
+				{OverrideRule: &rule.OverrideRule{
+					VariantID: "override-rule",
+					ValueData: "override_default",
+				}},
 			},
 		}
 
-		fmt.Println("Updating the feature flags")
 		if err = ofClient.SetFlag(context.TODO(), flagDefinition); err != nil {
 			log.Fatal("updating feature flags: ", err)
 		}
