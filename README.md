@@ -454,6 +454,50 @@ Creating a New Flag:
 ![dark mode](https://github.com/user-attachments/assets/d197a989-658a-4c11-8ac4-f150e826e333)
 ![light mode](https://github.com/user-attachments/assets/f8cc4733-9260-44ac-b244-fbdda2169365)
 
+#### Docker Compose
+
+The pushed docker image for the editor fits right in to a compose.yml file:
+
+```yaml
+services:
+    mongodb:
+        image: mongo:8.0
+        command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+        ports:
+            - "27017:27017"
+        volumes:
+            - mongo-data:/data/db
+            - mongo-config:/data/configdb
+        networks:
+            - internal
+            - external
+        healthcheck:
+            test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017'}]}) }" | mongosh --port 27017 --quiet
+            interval: 5s
+            timeout: 30s
+            start_period: 0s
+            start_interval: 1s
+            retries: 30
+        restart: on-failure
+
+    openfeature-mongodb-editor:
+        image: lidtop/mongo-openfeature-go-editor
+        networks:
+            - internal
+            - external
+        ports:
+            - "8081:8080"
+        environment:
+            - MONGODB_URI=mongodb://mongodb:27017
+            - MONGODB_DATABASE=some_database
+            - MONGODB_COLLECTION=some_collection
+            - MONGODB_DOCUMENT_ID=feature_flags
+        depends_on:
+            mongodb:
+                condition: service_healthy
+                restart: true
+```
+
 ### AI Usage
 
 Most of the Go code (that isn't tests), is not AI generated. I used GitHub inline suggestions and occasionally the chat for some Go code boilerplate. Most of the tests are AI generated/assisted. The editor is 99% AI generated because it wasn't my focus with this project and I just wanted something that worked.
