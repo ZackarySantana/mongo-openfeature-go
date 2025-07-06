@@ -3,7 +3,6 @@ package editor
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -48,10 +47,8 @@ func (h *WebHandler) HandleListFlags(w http.ResponseWriter, r *http.Request) {
 func (h *WebHandler) HandleEditFlag(w http.ResponseWriter, r *http.Request) {
 	flagName := r.PathValue("name")
 	var def *flag.Definition
-	fmt.Println("Flag name from path:", flagName)
 
 	if flagName != "" {
-		fmt.Println("Getting flag name")
 		var err error
 		def, err = h.client.GetFlag(r.Context(), flagName)
 		if err != nil {
