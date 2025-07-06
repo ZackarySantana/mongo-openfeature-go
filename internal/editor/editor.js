@@ -347,6 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const addBtn = document.createElement("button");
         addBtn.type = "button";
         addBtn.innerText = "Add Rule";
+        addBtn.style.minWidth = "100px";
         addBtn.onclick = () => {
             const type = select.value;
             const key = type.charAt(0).toLowerCase() + type.slice(1);
@@ -399,7 +400,6 @@ document.addEventListener("DOMContentLoaded", () => {
         input.id = id;
         input.value = value;
         input.readOnly = true;
-        input.style.backgroundColor = "#e9ecef";
         return createField(label, input);
     }
 

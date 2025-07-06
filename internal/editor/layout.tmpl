@@ -4,57 +4,193 @@
 <head>
     <meta charset="UTF-8">
     <title>Flag Manager</title>
+    <!-- This script runs in the <head> to prevent the theme flash -->
+    <script>
+        (function() {
+            function getInitialTheme() {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) { return savedTheme; }
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', getInitialTheme());
+        })();
+    </script>
     <style>
-        body { font-family: sans-serif; margin: 2em; background: #f4f4f9; color: #333; }
-        nav { margin-bottom: 2em; }
-        a { color: #0056b3; text-decoration: none; }
-        .container { max-width: 960px; margin: auto; background: white; padding: 2em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        /* --- CSS Variables for Theming --- */
+        :root {
+            --bg-color: #f4f4f9;
+            --card-bg-color: white;
+            --text-color: #333;
+            --link-color: #0056b3;
+            --border-color: #ddd;
+            --input-bg-color: white;
+            --input-border-color: #ccc;
+            --button-secondary-bg: #6c757d;
+            --button-secondary-hover-bg: #5a6268;
+            --header-bg-color: #f0f0f0;
+            --readonly-bg-color: #e9ecef;
+        }
+
+        html[data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --link-color: #64b5f6;
+            --border-color: #444;
+            --input-bg-color: #2c2c2c;
+            --input-border-color: #555;
+            --button-secondary-bg: #4a4a4a;
+            --button-secondary-hover-bg: #5a5a5a;
+            --header-bg-color: #2a2a2a;
+            --readonly-bg-color: #222;
+        }
+
+        /* --- General Styles using Variables --- */
+        body {
+            font-family: sans-serif;
+            margin: 2em;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.2s, color 0.2s;
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2em;
+        }
+        a { color: var(--link-color); text-decoration: none; }
+        .container {
+            max-width: 960px;
+            margin: auto;
+            background-color: var(--card-bg-color);
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
         ul { list-style-type: none; padding: 0; }
         li {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0.5em;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-color);
         }
-        li:hover { background-color: #f9f9f9; }
+        li:hover { background-color: var(--bg-color); }
         form > div { margin-bottom: 1em; }
         label { display: block; margin-bottom: 0.5em; font-weight: bold; }
-        input[type="text"], input[type="number"], textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 15px; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #004494; }
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid var(--input-border-color);
+            background-color: var(--input-bg-color);
+            color: var(--text-color);
+            border-radius: 4px;
+        }
+        input:read-only {
+            background-color: var(--readonly-bg-color);
+        }
+        button {
+            padding: 10px 15px;
+            background-color: var(--link-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { filter: brightness(90%); }
         .delete-btn { background-color: #dc3545; }
-        .delete-btn:hover { background-color: #c82333; }
-        .form-actions { display: flex; justify-content: space-between; align-items: center; }
-        /* New styles for the rule builder */
-        .rule-list { border-left: 2px solid #e0e0e0; padding-left: 1em; margin-top: 1em; }
-        .rule-element { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 1em; background: #fafafa; }
-        .rule-header { display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; padding: 0.5em; border-bottom: 1px solid #ddd; }
-        .rule-content { padding: 1em; }
-        .form-field { margin-bottom: 0.75em; }
-        .form-field label { font-weight: normal; font-size: 0.9em; }
-        .delete-rule-btn { background-color: #6c757d; padding: 4px 8px; font-size: 0.8em; }
-        .add-rule-container { margin-top: 1em; padding-top: 1em; padding-bottom: 0.75em; border-top: 1px dashed #ccc; }
-        .add-rule-container select { padding: 8px; margin-right: 1em; }
         .list-delete-btn {
-            background-color: #6c757d;
+            background-color: var(--button-secondary-bg);
             padding: 4px 8px;
             font-size: 0.8em;
         }
-        .list-delete-btn:hover { background-color: #5a6268; }
-        textarea.json-input { min-height: 80px; font-family: monospace; white-space: pre; }
-
-        /* --- SEARCH BAR STYLES (RESTORED) --- */
+        .list-delete-btn:hover { background-color: var(--button-secondary-hover-bg); }
         .search-container { margin-bottom: 1em; }
         #search-box { padding: 10px; font-size: 1em; }
-        
+        textarea.json-input { min-height: 80px; font-family: monospace; white-space: pre; }
+
+        /* --- RESTORED Rule Editor Styles using Variables --- */
+        .rule-element {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 1em;
+            background: var(--bg-color);
+        }
+        .rule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--header-bg-color);
+            padding: 0.5em;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .rule-header a { font-weight: bold; }
+        .rule-content {
+            padding: 1em;
+        }
+        .form-field {
+            margin-bottom: 0.75em;
+        }
+        .form-field label {
+            font-weight: normal;
+            font-size: 0.9em;
+        }
+        .delete-rule-btn {
+            background-color: var(--button-secondary-bg);
+            padding: 4px 8px;
+            font-size: 0.8em;
+        }
+        .add-rule-container {
+            display: flex;
+            align-items: center;
+            margin-top: 1em;
+            padding-top: 1em;
+            border-top: 1px dashed var(--border-color);
+        }
+        .add-rule-container select {
+            padding: 10px;
+            margin-right: 1em;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <nav><a href="/">Home</a></nav>
+        <nav>
+            <a href="/">Home</a>
+            <button id="theme-toggle" style="padding: 6px 12px; font-size: 0.9em;">Toggle Theme</button>
+        </nav>
         {{template "main" .}}
     </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('theme-toggle');
+            const htmlEl = document.documentElement;
+
+            function updateButtonText(theme) {
+                 if (theme === 'dark') {
+                    themeToggle.innerText = 'Switch to Light Mode';
+                } else {
+                    themeToggle.innerText = 'Switch to Dark Mode';
+                }
+            }
+
+            function toggleTheme() {
+                const currentTheme = htmlEl.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                htmlEl.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateButtonText(newTheme);
+            }
+
+            updateButtonText(htmlEl.getAttribute('data-theme'));
+            themeToggle.addEventListener('click', toggleTheme);
+        });
+    </script>
+
     <script src="/editor.js"></script>
 </body>
 </html>
