@@ -426,7 +426,7 @@ USE_TESTCONTAINER=true go run cmd/editor/main.go
 or you can use the Docker image:
 
 ```bash
-docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> -e MONGODB_DATABASE=<your_database> -e MONGODB_COLLECTION=<your_collection> -e MONGODB_DOCUMENT_ID=<your_document_id> zackarysantana/mongo-openfeature-go-editor
+docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> -e MONGODB_DATABASE=<your_database> -e MONGODB_COLLECTION=<your_collection> -e MONGODB_DOCUMENT_ID=<your_document_id> lidtop/mongo-openfeature-go-editor
 ```
 
 The default values if no environment variables are set are:
