@@ -28,7 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function render() {
         builderContainer.innerHTML = "";
-        const rootList = createRuleList(state, { hideValueData: false });
+        const rootList = createRuleList(state, {
+            hideValueData: false,
+            hidePriority: false,
+        });
         builderContainer.appendChild(rootList);
         syncTextarea();
     }
@@ -79,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
         content.className = "rule-content";
         wrapper.appendChild(content);
 
-        // Generate a unique ID for this rule's parent computed field, if it's a composite rule.
         const computedVariantId = `computed-variant-${Math.random()}`;
 
         switch (ruleTypeKey) {
@@ -242,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 content.appendChild(
                     createRuleList(rule.Rules, {
                         hideValueData: true,
+                        hidePriority: true,
                         parentComputedVariantId: computedVariantId,
                         parentRuleData: ruleData,
                     })
@@ -251,11 +254,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 const notWrapper = { Rule: [rule.Rule] };
                 const notList = createRuleList(notWrapper.Rule, {
                     hideValueData: true,
+                    hidePriority: true,
                     parentComputedVariantId: computedVariantId,
                     parentRuleData: ruleData,
                 });
                 notList.className = "rule-list nested";
                 content.appendChild(notList);
+                break;
+            // NEW: Add case for OverrideRule. It has no specific fields, so the case is empty.
+            case "overrideRule":
                 break;
         }
 
@@ -271,6 +278,12 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             content.appendChild(
                 createTextField("VariantID", rule, "VariantID", options)
+            );
+        }
+
+        if (!options.hidePriority) {
+            content.appendChild(
+                createNumberField("Priority", rule, "Priority", options)
             );
         }
 
@@ -311,6 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "AndRule",
             "OrRule",
             "NotRule",
+            "OverrideRule", // NEW: Add OverrideRule to the dropdown
         ];
         ruleTypes.forEach((type) => {
             const option = document.createElement("option");
@@ -357,7 +371,6 @@ document.addEventListener("DOMContentLoaded", () => {
         input.oninput = (e) => {
             obj[key] = e.target.value;
             syncTextarea();
-            // If this field is a VariantID inside a composite rule, update the parent.
             if (key === "VariantID" && options.parentComputedVariantId) {
                 updateComputedVariant(
                     options.parentComputedVariantId,
@@ -371,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function createComputedTextField(label, value, id) {
         const input = document.createElement("input");
         input.type = "text";
-        input.id = id; // Assign the unique ID
+        input.id = id;
         input.value = value;
         input.readOnly = true;
         input.style.backgroundColor = "#e9ecef";
