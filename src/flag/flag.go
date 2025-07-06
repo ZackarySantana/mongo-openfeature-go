@@ -14,8 +14,7 @@ type Definition struct {
 	Rules []rule.ConcreteRule `bson:"rules,omitempty"`
 }
 
-// Evaluate walks the Rules in order, returns the first match’s (value,detail),
-// or the default if none match.
+// Evaluate walks the rules in the definition and returns the highest priority rule that matches the context.
 func (def *Definition) Evaluate(ctx map[string]any) (any, openfeature.ProviderResolutionDetail) {
 	var currentRule rule.ConcreteRule
 	found := false
