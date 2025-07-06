@@ -1,0 +1,44 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flag Manager</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; background: #f4f4f9; color: #333; }
+        nav { margin-bottom: 2em; }
+        a { color: #0056b3; text-decoration: none; }
+        .container { max-width: 960px; margin: auto; background: white; padding: 2em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        ul { list-style-type: none; padding: 0; }
+        li { margin-bottom: 0.5em; }
+        form > div { margin-bottom: 1em; }
+        label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        input[type="text"], input[type="number"], textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #004494; }
+        .delete-btn { background-color: #dc3545; }
+        .delete-btn:hover { background-color: #c82333; }
+        .form-actions { display: flex; justify-content: space-between; align-items: center; }
+        /* New styles for the rule builder */
+        .rule-list { border-left: 2px solid #e0e0e0; padding-left: 1em; margin-top: 1em; }
+        .rule-element { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 1em; background: #fafafa; }
+        .rule-header { display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; padding: 0.5em; border-bottom: 1px solid #ddd; }
+        .rule-content { padding: 1em; }
+        .form-field { margin-bottom: 0.75em; }
+        .form-field label { font-weight: normal; font-size: 0.9em; }
+        .delete-rule-btn { background-color: #6c757d; padding: 4px 8px; font-size: 0.8em; }
+        .add-rule-container { margin-top: 1em; padding-top: 1em; border-top: 1px dashed #ccc; }
+        .add-rule-container select { padding: 8px; margin-right: 1em; }
+        textarea.json-input { min-height: 80px; font-family: monospace; white-space: pre; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav><a href="/">Home</a></nav>
+        {{template "main" .}}
+    </div>
+    <!-- Include the new script -->
+    <script src="/editor.js"></script>
+</body>
+</html>
+{{end}}

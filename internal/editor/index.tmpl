@@ -1,0 +1,12 @@
+{{define "main"}}
+    <h2>All Feature Flags</h2>
+    <ul>
+        {{range .Flags}}
+            <li><a href="/edit/{{.FlagName}}">{{.FlagName}}</a></li>
+        {{else}}
+            <li>No flags found.</li>
+        {{end}}
+    </ul>
+    <hr>
+    <a href="/edit"><button>Create New Flag</button></a>
+{{end}}

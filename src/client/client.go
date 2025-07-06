@@ -103,7 +103,10 @@ func (c *Client) getFlagMultiDocument(ctx context.Context, flagName string) (*fl
 }
 
 func (c *Client) getFlagSingleDocument(ctx context.Context, flagName string) (*flag.Definition, error) {
-	var result map[string]flag.Definition
+	var result struct {
+		ID    any                        `bson:"_id"`
+		Flags map[string]flag.Definition `bson:",inline"`
+	}
 	err := c.collection.FindOne(ctx, bson.M{"_id": c.documentID}).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -111,10 +114,10 @@ func (c *Client) getFlagSingleDocument(ctx context.Context, flagName string) (*f
 		}
 		return nil, fmt.Errorf("getting flag in document %s: %w", c.documentID, err)
 	}
-	if len(result) == 0 {
+	if len(result.Flags) == 0 {
 		return nil, fmt.Errorf("document %s is empty", c.documentID)
 	}
-	flag, ok := result[flagName]
+	flag, ok := result.Flags[flagName]
 	if !ok {
 		return nil, fmt.Errorf("flag not found in document %s", c.documentID)
 	}
