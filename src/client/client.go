@@ -160,6 +160,9 @@ func (c *Client) GetAllFlags(ctx context.Context) (map[string]flag.Definition, e
 		if err == nil {
 			return result, nil
 		}
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return result, nil
+		}
 		c.logger.Error("error getting all flags, retrying", slog.Int("attempt", i+1), slog.Any("error", err))
 	}
 
@@ -197,7 +200,10 @@ func (c *Client) getAllFlagsMultiDocument(ctx context.Context) (map[string]flag.
 }
 
 func (c *Client) getAllFlagsSingleDocument(ctx context.Context) (map[string]flag.Definition, error) {
-	var result map[string]flag.Definition
+	var result struct {
+		ID    any                        `bson:"_id"`
+		Flags map[string]flag.Definition `bson:",inline"`
+	}
 	err := c.collection.FindOne(ctx, bson.M{"_id": c.documentID}).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -206,5 +212,5 @@ func (c *Client) getAllFlagsSingleDocument(ctx context.Context) (map[string]flag
 		return nil, fmt.Errorf("getting all flags in document %s: %w", c.documentID, err)
 	}
 
-	return result, nil
+	return result.Flags, nil
 }
