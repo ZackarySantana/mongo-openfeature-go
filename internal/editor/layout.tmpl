@@ -25,8 +25,10 @@
             --border-color: #ddd;
             --input-bg-color: white;
             --input-border-color: #ccc;
-            --button-secondary-bg: #6c757d;
-            --button-secondary-hover-bg: #5a6268;
+            --button-delete-bg: #dc3545;
+            --button-delete-hover-bg: #c82333;
+            --button-create-bg: #28a745;
+            --button-create-hover-bg: #218838;
             --header-bg-color: #f0f0f0;
             --readonly-bg-color: #e9ecef;
         }
@@ -39,8 +41,10 @@
             --border-color: #444;
             --input-bg-color: #2c2c2c;
             --input-border-color: #555;
-            --button-secondary-bg: #4a4a4a;
-            --button-secondary-hover-bg: #5a5a5a;
+            --button-delete-bg: #b71c1c;
+            --button-delete-hover-bg: #c62828;
+            --button-create-bg: #4caf50;
+            --button-create-hover-bg: #388e3c;
             --header-bg-color: #2a2a2a;
             --readonly-bg-color: #222;
         }
@@ -101,13 +105,15 @@
             cursor: pointer;
         }
         button:hover { filter: brightness(90%); }
-        .delete-btn { background-color: #dc3545; }
+        .create-btn { background-color: var(--button-create-bg); }
+        .create-btn:hover { background-color: var(--button-create-hover-bg); }
+        .delete-btn { background-color: var(--button-delete-bg); }
         .list-delete-btn {
-            background-color: var(--button-secondary-bg);
+            background-color: var(--button-delete-bg);
             padding: 4px 8px;
             font-size: 0.8em;
         }
-        .list-delete-btn:hover { background-color: var(--button-secondary-hover-bg); }
+        .list-delete-btn:hover { background-color: var(--button-delete-hover-bg); }
         .search-container { margin-bottom: 1em; }
         #search-box { padding: 10px; font-size: 1em; }
         textarea.json-input { min-height: 80px; font-family: monospace; white-space: pre; }
@@ -139,7 +145,7 @@
             font-size: 0.9em;
         }
         .delete-rule-btn {
-            background-color: var(--button-secondary-bg);
+            background-color: var(--button-delete-bg);
             padding: 4px 8px;
             font-size: 0.8em;
         }
