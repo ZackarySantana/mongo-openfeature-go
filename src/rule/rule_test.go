@@ -77,10 +77,10 @@ func TestRegexRule(t *testing.T) {
 	} {
 		t.Run(tName, func(t *testing.T) {
 			rule := &RegexRule{
-				Key:           "test_key",
-				RegexpPattern: `^\d{5}$`,
-				VariantID:     "test_variant",
-				ValueData:     "test_value_data",
+				Key:       "test_key",
+				Pattern:   `^\d{5}$`,
+				VariantID: "test_variant",
+				ValueData: "test_value_data",
 			}
 			assert.Equal(t, tCase.matches, rule.Matches(tCase.ctx))
 		})

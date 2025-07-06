@@ -61,10 +61,10 @@ func main() {
 				ValueData: "database_default_2",
 			}},
 			{RegexRule: &rule.RegexRule{
-				Key:           "user_id",
-				VariantID:     "regex-rule",
-				RegexpPattern: "^[0-9]{3}$",
-				ValueData:     "regex_default",
+				Key:       "user_id",
+				VariantID: "regex-rule",
+				Pattern:   "^[0-9]{3}$",
+				ValueData: "regex_default",
 			}},
 			{ExistsRule: &rule.ExistsRule{
 				Key:       "unique_user_id",

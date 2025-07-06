@@ -36,8 +36,8 @@ func (r *ExactMatchRule) GetPriority() int { return r.Priority }
 
 // RegexRule fires if ctx[Key] (string) matches Pattern.
 type RegexRule struct {
-	Key           string
-	RegexpPattern string
+	Key     string
+	Pattern string
 	// Regexp is not serialized, but compiled on demand.
 	// This is to avoid the overhead of compiling the regex on every match.
 	Regexp *regexp.Regexp `json:"-" bson:"-"`
@@ -55,9 +55,9 @@ func (r *RegexRule) Matches(ctx map[string]any) bool {
 	// TODO: Test if we are compiling the regex too often?
 	if r.Regexp == nil {
 		var err error
-		r.Regexp, err = regexp.Compile(r.RegexpPattern)
+		r.Regexp, err = regexp.Compile(r.Pattern)
 		if err != nil {
-			slog.Error("invalid regex pattern", "key", r.Key, "pattern", r.RegexpPattern, "error", err)
+			slog.Error("invalid regex pattern", "key", r.Key, "pattern", r.Pattern, "error", err)
 			return false
 		}
 	}
