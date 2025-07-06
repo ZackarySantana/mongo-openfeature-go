@@ -25,6 +25,8 @@
             --border-color: #ddd;
             --input-bg-color: white;
             --input-border-color: #ccc;
+            --button-link-bg: #007bff;
+            --button-link-hover-bg: #0056b3;
             --button-delete-bg: #dc3545;
             --button-delete-hover-bg: #c82333;
             --button-create-bg: #28a745;
@@ -41,6 +43,8 @@
             --border-color: #444;
             --input-bg-color: #2c2c2c;
             --input-border-color: #555;
+            --button-link-bg: #2196f3;
+            --button-link-hover-bg: #1976d2;
             --button-delete-bg: #b71c1c;
             --button-delete-hover-bg: #c62828;
             --button-create-bg: #4caf50;
@@ -98,16 +102,17 @@
         }
         button {
             padding: 10px 15px;
-            background-color: var(--link-color);
+            background-color: var(--button-link-bg);
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
         }
-        button:hover { filter: brightness(90%); }
+        button:hover { background-color: var(--button-link-hover-bg); }
         .create-btn { background-color: var(--button-create-bg); }
         .create-btn:hover { background-color: var(--button-create-hover-bg); }
         .delete-btn { background-color: var(--button-delete-bg); }
+        .delete-btn:hover { background-color: var(--button-delete-hover-bg); }
         .list-delete-btn {
             background-color: var(--button-delete-bg);
             padding: 4px 8px;
@@ -148,6 +153,9 @@
             background-color: var(--button-delete-bg);
             padding: 4px 8px;
             font-size: 0.8em;
+        }
+        .delete-rule-btn:hover {
+            background-color: var(--button-delete-hover-bg);
         }
         .add-rule-container {
             display: flex;
