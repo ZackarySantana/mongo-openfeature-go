@@ -1,12 +1,48 @@
 {{define "main"}}
     <h2>All Feature Flags</h2>
-    <ul>
+
+    <!-- NEW: Search bar -->
+    <div class="search-container">
+        <input type="text" id="search-box" placeholder="Search for flags...">
+    </div>
+
+    <ul id="flag-list">
         {{range .Flags}}
-            <li><a href="/edit/{{.FlagName}}">{{.FlagName}}</a></li>
+            <li>
+                <!-- Flag name and link -->
+                <a href="/edit/{{.FlagName}}">{{.FlagName}}</a>
+
+                <!-- NEW: Delete form for each flag -->
+                <form action="/delete" method="post" onsubmit="return confirm('Are you sure you want to delete flag \'{{.FlagName}}\'?');">
+                    <input type="hidden" name="flagName" value="{{.FlagName}}">
+                    <button type="submit" class="list-delete-btn">Delete</button>
+                </form>
+            </li>
         {{else}}
             <li>No flags found.</li>
         {{end}}
     </ul>
     <hr>
-    <a href="/edit"><button>Create New Flag</button></a>
+    <a href="/edit/"><button>Create New Flag</button></a>
+
+    <!-- NEW: JavaScript for live filtering -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchBox = document.getElementById('search-box');
+            const flagList = document.getElementById('flag-list');
+            const flags = Array.from(flagList.getElementsByTagName('li'));
+
+            searchBox.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                flags.forEach(flag => {
+                    const flagName = flag.textContent.toLowerCase();
+                    if (flagName.includes(searchTerm)) {
+                        flag.style.display = 'flex';
+                    } else {
+                        flag.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
 {{end}}
