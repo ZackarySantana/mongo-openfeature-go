@@ -2,6 +2,13 @@
 
 This repository is a MongoDB provider for the [OpenFeature Go SDK](https://openfeature.dev/docs/reference/technologies/server/go/).
 
+-   [Features](#features)
+-   [Usage](#usage)
+-   [Standard Rules](#standard-rules)
+-   [Control Rules](#control-rules)
+-   [Example](#example)
+-   [Editor](#editor)
+
 ## Features
 
 -   Go OpenFeature SDK compatible MongoDB provider.
@@ -404,3 +411,19 @@ If there are multiple `OverrideRule`s, the one with the highest priority will be
 ### Example
 
 For a complete example, look at [cmd/example/main.go](cmd/example/main.go).
+
+### Editor
+
+Instead of manually creating flags (which can be done with some go code), you can use the editor in this repository to manage flags. To ues it, you can either clone this repo and run
+
+```bash
+MONGODB_URI=<your_mongodb_uri> go run cmd/editor/main.go
+# or for Testing purposes
+USE_TESTCONTAINER=true go run cmd/editor/main.go
+```
+
+or you can use the Docker image:
+
+```bash
+docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> zackarysantana/mongo-openfeature-go-editor
+```

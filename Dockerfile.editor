@@ -1,0 +1,26 @@
+FROM golang:1.24 AS base
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Target "dev" for development mode.
+FROM base AS dev
+
+RUN go install github.com/mitranim/gow@latest
+
+CMD ["gow", "-r=false", "run", "cmd/editor/main.go"]
+
+# Prepare binary for production mode.
+FROM base AS base-prod
+
+RUN go build -o /app/binary cmd/editor/main.go
+
+# Target "prod" for production mode.
+FROM debian AS prod
+
+COPY --from=base-prod /app/binary /root/binary
+
+CMD ["/root/binary"]
