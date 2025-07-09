@@ -195,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     createTextField("Substring", rule, "Substring", options)
                 );
                 break;
-            case "ipRangeRule":
+            case "iPRangeRule":
                 content.appendChild(
                     createTextField("Key", rule, "Key", options)
                 );
