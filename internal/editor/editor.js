@@ -195,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     createTextField("Substring", rule, "Substring", options)
                 );
                 break;
-            case "iPRangeRule":
+            case "ipRangeRule":
                 content.appendChild(
                     createTextField("Key", rule, "Key", options)
                 );
@@ -350,7 +350,10 @@ document.addEventListener("DOMContentLoaded", () => {
         addBtn.style.minWidth = "100px";
         addBtn.onclick = () => {
             const type = select.value;
-            const key = type.charAt(0).toLowerCase() + type.slice(1);
+            let key = type.charAt(0).toLowerCase() + type.slice(1);
+            if (type === "IPRangeRule") {
+                key = "ipRangeRule"; // Use lowercase 'ip' for IPRangeRule.
+            }
             const newRule = { [key]: {} };
 
             if (type === "AndRule" || type === "OrRule") {
