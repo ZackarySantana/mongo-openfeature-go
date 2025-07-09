@@ -11,7 +11,7 @@ type Definition struct {
 	DefaultValue   any
 	DefaultVariant string
 
-	Rules []rule.ConcreteRule `bson:"rules,omitempty"`
+	Rules []rule.ConcreteRule `bson:"rules"`
 }
 
 // Evaluate walks the rules in the definition and returns the highest priority rule that matches the context.
