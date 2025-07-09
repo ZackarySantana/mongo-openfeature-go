@@ -3,18 +3,18 @@ TAG := latest
 DEV_TAG := dev
 DOCKERFILE := Dockerfile.editor
 
+PLATFORMS := linux/amd64,linux/arm64
+
 .PHONY: help
 help:
 	@echo "Usage: make VERSION=<version> <target>"
-	@echo "Example: make VERSION=v1.0.0  docker-publish-editor-prod"
+	@echo "Example: make VERSION=v1.0.0 docker-publish-editor-prod"
 	@echo ""
 	@echo "Available commands:"
-	@echo "  make docker-build-editor-dev    - Builds the development Docker image."
-	@echo "  make docker-build-editor-prod   - Builds the production Docker image."
-	@echo "  make docker-publish-editor-prod - Publishes the production image (tags: latest, <version>)."
+	@echo "  make docker-build-editor-dev    - Builds the development Docker image for your local architecture."
+	@echo "  make docker-publish-editor-prod - Builds and publishes a multi-arch (AMD64, ARM64) production image."
 	@echo "  make help                       - Shows this help message."
 
-# This is a guard target. It ensures VERSION is set for any target that depends on it.
 .PHONY: check-version
 check-version:
 	@if [ -z "$(VERSION)" ]; then \
@@ -24,26 +24,21 @@ check-version:
 
 .PHONY: docker-build-editor-dev
 docker-build-editor-dev: check-version
-	@echo "--> Building development image with tags: $(DEV_TAG) and $(VERSION)-$(DEV_TAG)"
+	@echo "--> Building development image for local architecture with tags: $(DEV_TAG) and $(VERSION)-$(DEV_TAG)"
 	docker build --target dev -f $(DOCKERFILE) \
 		-t $(IMAGE_NAME):$(DEV_TAG) \
 		-t $(IMAGE_NAME):$(VERSION)-$(DEV_TAG) .
 
-.PHONY: docker-build-editor-prod
-docker-build-editor-prod: check-version
-	@echo "--> Building production image with tags: $(TAG) and $(VERSION)"
-	docker build --target prod -f $(DOCKERFILE) \
-		-t $(IMAGE_NAME):$(TAG) \
-		-t $(IMAGE_NAME):$(VERSION) .
-
 .PHONY: docker-publish-editor-prod
-docker-publish-editor-prod: check-version docker-build-editor-prod
-	@echo "--> Publishing production image tags: $(TAG) and $(VERSION)"
-	docker push $(IMAGE_NAME):$(TAG)
-	docker push $(IMAGE_NAME):$(VERSION)
+docker-publish-editor-prod: check-version
+	@echo "--> Building and publishing multi-platform ($(PLATFORMS)) image with tags: $(TAG) and $(VERSION)"
+	docker buildx build --platform $(PLATFORMS) --target prod -f $(DOCKERFILE) \
+		-t $(IMAGE_NAME):$(TAG) \
+		-t $(IMAGE_NAME):$(VERSION) \
+		--push .
 
 .PHONY: all
-all: docker-build-editor-prod
+all: help
 
 .PHONY: clean
 clean:
