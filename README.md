@@ -418,7 +418,7 @@ For a complete example, look at [cmd/example/main.go](cmd/example/main.go).
 Instead of manually creating flags (which can be done with some go code), you can use the editor in this repository to manage flags. To ues it, you can either clone this repo and run
 
 ```bash
-MONGODB_URI=<your_mongodb_uri> MONGODB_DATABASE=<your_database> MONGODB_COLLECTION=<your_collection> MONGODB_DOCUMENT_ID=<your_document_id> go run cmd/editor/main.go
+MONGODB_ENDPOINT=<your_mongodb_endpoint> MONGODB_DATABASE=<your_database> MONGODB_COLLECTION=<your_collection> MONGODB_DOCUMENT_ID=<your_document_id> go run cmd/editor/main.go
 # or for Testing purposes
 USE_TESTCONTAINER=true go run cmd/editor/main.go
 ```
@@ -426,12 +426,12 @@ USE_TESTCONTAINER=true go run cmd/editor/main.go
 or you can use the Docker image:
 
 ```bash
-docker run -p 8080:8080 -e MONGODB_URI=<your_mongodb_uri> -e MONGODB_DATABASE=<your_database> -e MONGODB_COLLECTION=<your_collection> -e MONGODB_DOCUMENT_ID=<your_document_id> lidtop/mongo-openfeature-go-editor
+docker run -p 8080:8080 -e MONGODB_ENDPOINT=<your_mongodb_endpoint> -e MONGODB_DATABASE=<your_database> -e MONGODB_COLLECTION=<your_collection> -e MONGODB_DOCUMENT_ID=<your_document_id> lidtop/mongo-openfeature-go-editor
 ```
 
 The default values if no environment variables are set are:
 
--   `MONGODB_URI`: Will crash unless `USE_TESTCONTAINER` is set to `true`.
+-   `MONGODB_ENDPOINT`: Will crash unless `USE_TESTCONTAINER` is set to `true`.
 -   `MONGODB_DATABASE`: `feature_flags`
 -   `MONGODB_COLLECTION`: `feature_flags`
 -   `MONGODB_DOCUMENT_ID`: `` (uses multi-document mode)
@@ -488,7 +488,7 @@ services:
         ports:
             - "8081:8080"
         environment:
-            - MONGODB_URI=mongodb://mongodb:27017
+            - MONGODB_ENDPOINT=mongodb://mongodb:27017
             - MONGODB_DATABASE=some_database
             - MONGODB_COLLECTION=some_collection
             - MONGODB_DOCUMENT_ID=feature_flags

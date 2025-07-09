@@ -28,5 +28,7 @@ COPY --from=base-prod /app/internal/editor/*.tmpl /root/internal/editor/
 # Copy editor.js file
 COPY --from=base-prod /app/internal/editor/editor.js /root/internal/editor/
 
+EXPOSE 8080
+
 WORKDIR /root
 CMD ["/root/binary"]

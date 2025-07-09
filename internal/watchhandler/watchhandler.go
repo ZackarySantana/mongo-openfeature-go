@@ -82,7 +82,7 @@ func (w *WatchHandler) baseWatch() error {
 	if w.documentID != "" {
 		pipeline = mongo.Pipeline{
 			{{Key: "$match", Value: bson.M{
-				"operationType":    bson.M{"$in": []string{"insert", "update ", "replace"}},
+				"operationType":    bson.M{"$in": []string{"insert", "update", "replace"}},
 				"fullDocument._id": w.documentID,
 			}}},
 		}
