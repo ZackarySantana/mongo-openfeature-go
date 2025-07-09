@@ -101,7 +101,7 @@ func main() {
 func insertExampleData(ofClient *client.Client) error {
 	flagDefinition := flag.Definition{
 		FlagName:       "v2_enabled",
-		DefaultValue:   "false",
+		DefaultValue:   "default-database-value",
 		DefaultVariant: "database_default",
 		Rules: []rule.ConcreteRule{
 			{ExactMatchRule: &rule.ExactMatchRule{
