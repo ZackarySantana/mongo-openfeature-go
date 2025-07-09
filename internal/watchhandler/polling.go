@@ -33,7 +33,10 @@ func (w *WatchHandler) polling() error {
 			err := w.collection.FindOne(ctx, filter).Decode(&result)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
-					w.logger.Debug("no document found", "documentID", w.documentID)
+					// It was deleted, handle it gracefully.
+					w.handleEvent(ChangeStreamEvent{
+						FullDocument: bson.M{},
+					})
 					continue
 				}
 				return fmt.Errorf("error finding document: %w", err)

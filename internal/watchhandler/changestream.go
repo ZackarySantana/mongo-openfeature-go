@@ -14,14 +14,14 @@ func (w *WatchHandler) changestream() error {
 	if w.documentID != "" {
 		pipeline = mongo.Pipeline{
 			{{Key: "$match", Value: bson.M{
-				"operationType":    bson.M{"$in": []string{"insert", "update ", "replace"}},
+				"operationType":    bson.M{"$in": []string{"insert", "update ", "replace", "delete"}},
 				"fullDocument._id": w.documentID,
 			}}},
 		}
 	} else {
 		pipeline = mongo.Pipeline{
 			{{Key: "$match", Value: bson.M{
-				"operationType": bson.M{"$in": []string{"insert", "update", "replace"}},
+				"operationType": bson.M{"$in": []string{"insert", "update", "replace", "delete"}},
 			}}},
 		}
 	}
@@ -44,6 +44,7 @@ func (w *WatchHandler) changestream() error {
 		if err := cs.Decode(&csEvent); err != nil {
 			return fmt.Errorf("decoding change stream document: %w", err)
 		}
+		fmt.Println(csEvent)
 		if err := w.handleEvent(csEvent); err != nil {
 			return fmt.Errorf("handling change stream event: %w", err)
 		}

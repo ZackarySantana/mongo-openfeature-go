@@ -45,7 +45,8 @@ type WatchHandler struct {
 }
 
 type ChangeStreamEvent struct {
-	FullDocument bson.M `bson:"fullDocument"`
+	FullDocument  bson.M `bson:"fullDocument"`
+	OperationType string `bson:"operationType"`
 }
 
 func (w *WatchHandler) Watch() {
