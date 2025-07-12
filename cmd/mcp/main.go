@@ -66,6 +66,8 @@ func main() {
 				return mcp.NewToolResultError("cannot divide by zero"), nil
 			}
 			result = x / y
+		default:
+			return mcp.NewToolResultError("unknown operation"), nil
 		}
 
 		return mcp.NewToolResultText(fmt.Sprintf("%.2f", result)), nil
