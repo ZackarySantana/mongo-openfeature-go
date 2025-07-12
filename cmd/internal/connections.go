@@ -62,7 +62,12 @@ func GetConnections() (*mongo.Client, *client.Client, func(), error) {
 		cleanup()
 		return nil, nil, nil, fmt.Errorf("connecting to MongoDB: %w", err)
 	}
-	defer mongoClient.Disconnect(context.Background())
+	cleanup = func() {
+		cleanup()
+		if err := mongoClient.Disconnect(context.Background()); err != nil {
+			log.Printf("Error disconnecting MongoDB client: %v", err)
+		}
+	}
 
 	ofClient, err := client.New(client.NewOptions(mongoClient, database, collection).WithDocumentID(documentID))
 	if err != nil {

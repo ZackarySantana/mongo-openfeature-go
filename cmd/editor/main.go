@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -87,7 +88,7 @@ func insertExampleData(ofClient *client.Client) error {
 	}
 
 	if err := ofClient.SetFlag(context.TODO(), flagDefinition); err != nil {
-		log.Fatal("updating feature flags: ", err)
+		return fmt.Errorf("inserting example feature flag: %w", err)
 	}
 
 	return nil
