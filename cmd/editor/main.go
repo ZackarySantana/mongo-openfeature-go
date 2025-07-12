@@ -5,54 +5,19 @@ import (
 	"log"
 	"os"
 
+	"github.com/zackarysantana/mongo-openfeature-go/cmd/internal"
 	"github.com/zackarysantana/mongo-openfeature-go/internal/editor"
-	"github.com/zackarysantana/mongo-openfeature-go/internal/testutil"
 	"github.com/zackarysantana/mongo-openfeature-go/src/client"
 	"github.com/zackarysantana/mongo-openfeature-go/src/flag"
 	"github.com/zackarysantana/mongo-openfeature-go/src/rule"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func main() {
-	database := os.Getenv("MONGODB_DATABASE")
-	if database == "" {
-		database = "openfeature"
-	}
-	collection := os.Getenv("MONGODB_COLLECTION")
-	if collection == "" {
-		collection = "feature_flags"
-	}
-	documentID := os.Getenv("MONGODB_DOCUMENT_ID")
-	if documentID == "" {
-		documentID = "feature_flags"
-	}
-
-	if os.Getenv("USE_TESTCONTAINER") == "true" {
-		log.Println("USE_TESTCONTAINER is true, starting MongoDB container...")
-		cleanup, err := testutil.CreateMongoContainer(context.Background())
-		if err != nil {
-			log.Fatalf("FATAL: creating MongoDB container: %v", err)
-		}
-		defer cleanup()
-
-		log.Println("Connecting to TestContainer Mongo at:", os.Getenv("MONGODB_ENDPOINT"))
-	}
-	mongoURI := os.Getenv("MONGODB_ENDPOINT")
-	if mongoURI == "" {
-		log.Fatalf("FATAL: MONGODB_ENDPOINT environment variable is not set and USE_TESTCONTAINER is not true.")
-	}
-
-	mongoClient, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
+	mongoClient, ofClient, cleanup, err := internal.GetConnections()
 	if err != nil {
-		log.Fatalf("FATAL: connecting to MongoDB: %v", err)
+		log.Fatalf("FATAL: getting connections: %v", err)
 	}
-	defer mongoClient.Disconnect(context.Background())
-
-	ofClient, err := client.New(client.NewOptions(mongoClient, database, collection).WithDocumentID(documentID))
-	if err != nil {
-		log.Fatalf("FATAL: creating MongoDB OpenFeature client: %v", err)
-	}
+	defer cleanup()
 
 	if err = insertExampleData(ofClient); err != nil {
 		log.Fatalf("FATAL: inserting example data: %v", err)
