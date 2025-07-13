@@ -196,30 +196,27 @@ const contextPost = `
       }
     },
     "andRule": {
-      "description": "Matches only when all nested rules match (logical AND operation). Only the top-level andRule should have Priority, ValueData, or VariantID; nested rules must not include these fields.",
+      "description": "Matches only when all nested rules match (logical AND operation). Only the top-level andRule should have ValueData and Priority; nested rules must not include ValueData or Priority, but do include VariantID.",
       "fields": {
         "Rules": "array of ConcreteRule - list of rules that must all match",
         "Priority": "int - rule priority (top-level only)",
-        "ValueData": "any - value to return when matched (top-level only)",
-        "VariantID": "string - variant identifier (top-level only)"
+        "ValueData": "any - value to return when matched (top-level only)"
       }
     },
     "orRule": {
-      "description": "Matches when any nested rule matches (logical OR operation). Only the top-level orRule should have Priority, ValueData, or VariantID; nested rules must not include these fields.",
+      "description": "Matches when any nested rule matches (logical OR operation). Only the top-level orRule should have ValueData and Priority; nested rules must not include ValueData or Priority, but do include VariantID.",
       "fields": {
         "Rules": "array of ConcreteRule - list of rules where any can match",
         "Priority": "int - rule priority (top-level only)",
-        "ValueData": "any - value to return when matched (top-level only)",
-        "VariantID": "string - variant identifier (top-level only)"
+        "ValueData": "any - value to return when matched (top-level only)"
       }
     },
     "notRule": {
-      "description": "Matches when the nested rule does not match (logical NOT operation). Only the top-level notRule should have Priority, ValueData, or VariantID; the nested rule must not include these fields.",
+      "description": "Matches when the nested rule does not match (logical NOT operation). Only the top-level notRule should have ValueData and Priority; the nested rule must not include ValueData or Priority, but does include VariantID.",
       "fields": {
         "Rule": "ConcreteRule - rule to negate",
         "Priority": "int - rule priority (top-level only)",
-        "ValueData": "any - value to return when matched (top-level only)",
-        "VariantID": "string - variant identifier (top-level only)"
+        "ValueData": "any - value to return when matched (top-level only)"
       }
     },
     "overrideRule": {
@@ -232,7 +229,7 @@ const contextPost = `
     }
   },
   "concrete_rule": {
-    "description": "A ConcreteRule is an object with a single key, where the key is the rule type in camelCase (e.g., 'exactMatchRule', 'regexRule', 'andRule', etc.), and the value is the rule object itself. When nesting rules (e.g., in 'andRule', 'orRule', 'notRule'), only the top-level rule should have 'Priority', 'ValueData', or 'VariantID'; nested rules must not include these fields.",
+    "description": "A ConcreteRule is an object with a single key, where the key is the rule type in camelCase (e.g., 'exactMatchRule', 'regexRule', 'andRule', etc.), and the value is the rule object itself. When nesting rules (e.g., in 'andRule', 'orRule', 'notRule'), only the top-level rule should have 'ValueData' and 'Priority'; nested rules must not include 'ValueData' or 'Priority', but do include 'VariantID'.",
     "example": {
       "exactMatchRule": {
         "Key": "user_id",
@@ -248,19 +245,20 @@ const contextPost = `
           {
             "exactMatchRule": {
               "Key": "user_id",
-              "KeyValue": "123"
+              "KeyValue": "123",
+              "VariantID": "beta"
             }
           },
           {
             "regexRule": {
               "Key": "email",
-              "Pattern": ".*@example.com"
+              "Pattern": ".*@example.com",
+              "VariantID": "email"
             }
           }
         ],
         "Priority": 100,
-        "ValueData": true,
-        "VariantID": "on"
+        "ValueData": true
       }
     }
   },
@@ -291,19 +289,20 @@ const contextPost = `
             "Rules": [
               {
                 "existsRule": {
-                  "Key": "email"
+                  "Key": "email",
+                  "VariantID": "has_email"
                 }
               },
               {
                 "regexRule": {
                   "Key": "email",
-                  "Pattern": ".*@example.com"
+                  "Pattern": ".*@example.com",
+                  "VariantID": "email"
                 }
               }
             ],
             "Priority": 50,
-            "ValueData": true,
-            "VariantID": "on"
+            "ValueData": true
           }
         }
       ]
