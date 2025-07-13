@@ -6,17 +6,12 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /app/binary cmd/editor/main.go
+RUN go build -o /app/binary cmd/mcp/main.go
 
 # Target "prod" for production mode.
 FROM debian
 
 COPY --from=base /app/binary /root/binary
-
-# Copy tmpl files
-COPY --from=base /app/internal/editor/*.tmpl /root/internal/editor/
-# Copy editor.js file
-COPY --from=base /app/internal/editor/editor.js /root/internal/editor/
 
 EXPOSE 8080
 

@@ -1,51 +1,61 @@
-IMAGE_NAME := lidtop/mongo-openfeature-go-editor
-TAG := latest
-DEV_TAG := dev
-DOCKERFILE := Dockerfile.editor
+# Image names
+IMAGE_EDITOR := lidtop/mongo-openfeature-go-editor
+IMAGE_MCP    := lidtop/mongo-openfeature-go-mcp-server
 
-PLATFORMS := linux/amd64,linux/arm64
+# Tags
+TAG         := latest
+
+# Dockerfiles
+DOCKERFILE_EDITOR := Dockerfile.editor
+DOCKERFILE_MCP    := Dockerfile.mcp
+
+# Multi-arch platforms
+PLATFORMS   := linux/amd64,linux/arm64
 
 .PHONY: help
 help:
 	@echo "Usage: make VERSION=<version> <target>"
-	@echo "Example: make VERSION=v1.0.0 docker-publish-editor-prod"
 	@echo ""
 	@echo "Available commands:"
-	@echo "  build-mcp-windows-arm64         - Builds the mcp.exe binary for Windows ARM64."
-	@echo "  make docker-build-editor-dev    - Builds the development Docker image for your local architecture."
-	@echo "  make docker-publish-editor-prod - Builds and publishes a multi-arch (AMD64, ARM64) production image."
-	@echo "  make help                       - Shows this help message."
+	@echo "  docker-publish-editor        - Build & publish editor image (multi-arch)."
+	@echo "  docker-publish-mcp           - Build & publish mcp-server image (multi-arch)."
+	@echo "  build-mcp-windows-arm64      - Builds the mcp.exe binary for Windows/ARM64."
+	@echo "  clean                        - Remove local images."
+	@echo "  help                         - This help message."
 
 .PHONY: check-version
 check-version:
 	@if [ -z "$(VERSION)" ]; then \
-		echo "Error: VERSION is not set. Please use 'VERSION=<version> make <target>'"; \
-		exit 1; \
+	  echo "Error: VERSION must be set, e.g. VERSION=v1.0.0"; \
+	  exit 1; \
 	fi
 
-.PHONY: docker-build-editor-dev
-docker-build-editor-dev: check-version
-	@echo "--> Building development image for local architecture with tags: $(DEV_TAG) and $(VERSION)-$(DEV_TAG)"
-	docker build --target dev -f $(DOCKERFILE) \
-		-t $(IMAGE_NAME):$(DEV_TAG) \
-		-t $(IMAGE_NAME):$(VERSION)-$(DEV_TAG) .
+.PHONY: docker-publish-editor
+docker-publish-editor: check-version
+	@echo "--> Building & publishing editor image ($(PLATFORMS)) with tags: $(TAG), $(VERSION)"
+	docker buildx build \
+	  --platform $(PLATFORMS) \
+	  -f $(DOCKERFILE_EDITOR) \
+	  -t $(IMAGE_EDITOR):$(TAG) \
+	  -t $(IMAGE_EDITOR):$(VERSION) \
+	  --push .
 
-.PHONY: docker-publish-editor-prod
-docker-publish-editor-prod: check-version
-	@echo "--> Building and publishing multi-platform ($(PLATFORMS)) image with tags: $(TAG) and $(VERSION)"
-	docker buildx build --platform $(PLATFORMS) --target prod -f $(DOCKERFILE) \
-		-t $(IMAGE_NAME):$(TAG) \
-		-t $(IMAGE_NAME):$(VERSION) \
-		--push .
+.PHONY: docker-publish-mcp
+docker-publish-mcp: check-version
+	@echo "--> Building & publishing mcp-server image ($(PLATFORMS)) with tags: $(TAG), $(VERSION)"
+	docker buildx build \
+	  --platform $(PLATFORMS) \
+	  -f $(DOCKERFILE_MCP) \
+	  -t $(IMAGE_MCP):$(TAG) \
+	  -t $(IMAGE_MCP):$(VERSION) \
+	  --push .
 
 build-mcp-windows-arm64:
+	@echo "--> Building mcp.exe for windows/arm64"
 	GOOS=windows GOARCH=arm64 go build -o mcp.exe cmd/mcp/main.go
-
-.PHONY: all
-all: help
 
 .PHONY: clean
 clean:
 	@echo "--> Cleaning up local Docker images"
-	@docker rmi $(IMAGE_NAME):$(TAG) || true
-	@docker rmi $(IMAGE_NAME):$(DEV_TAG) || true
+	-@docker rmi $(IMAGE_EDITOR):$(TAG) $(IMAGE_EDITOR):$(VERSION) || true
+	-@docker rmi $(IMAGE_MCP):$(TAG)    $(IMAGE_MCP):$(VERSION)    || true
