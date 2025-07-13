@@ -104,24 +104,82 @@ func (c *Client) getFlagMultiDocument(ctx context.Context, flagName string) (*fl
 
 func (c *Client) getFlagSingleDocument(ctx context.Context, flagName string) (*flag.Definition, error) {
 	var result struct {
+		ID    any                        `bson:"_id"`
 		Flags map[string]flag.Definition `bson:",inline"`
 	}
-	err := c.collection.FindOne(ctx, bson.M{"_id": c.documentID}, options.FindOne().SetProjection(bson.M{flagName: "1"})).Decode(&result)
+	opts := options.FindOne().SetProjection(bson.M{flagName: 1})
+	err := c.collection.FindOne(ctx, bson.M{"_id": c.documentID}, opts).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, fmt.Errorf("document %s: %w", c.documentID, err)
 		}
 		return nil, fmt.Errorf("getting flag in document %s: %w", c.documentID, err)
 	}
-	if len(result.Flags) == 0 {
-		return nil, fmt.Errorf("document %s is empty", c.documentID)
-	}
 	flag, ok := result.Flags[flagName]
 	if !ok {
-		return nil, fmt.Errorf("flag not found in document %s", c.documentID)
+		return nil, fmt.Errorf("flag '%s' not found in document %s", flagName, c.documentID)
 	}
 
 	return &flag, nil
+}
+
+// PartialUpdateFlag performs an atomic partial update on a flag definition.
+// The updates map should contain keys matching the BSON field names to be changed.
+func (c *Client) PartialUpdateFlag(ctx context.Context, flagName string, updates map[string]any) error {
+	var err error
+	for i := 0; i < c.maxTries; i++ {
+		err = c.partialUpdateFlag(ctx, flagName, updates)
+		if err == nil {
+			return nil
+		}
+		c.logger.Error("error partially updating flag, retrying", slog.Int("attempt", i+1), slog.String("flagName", flagName), slog.Any("error", err))
+	}
+	return fmt.Errorf("partially updating flag %s after %d attempts: %w", flagName, c.maxTries, err)
+}
+
+func (c *Client) partialUpdateFlag(ctx context.Context, flagName string, updates map[string]any) error {
+	if c.documentID != "" {
+		return c.partialUpdateFlagSingleDocument(ctx, flagName, updates)
+	}
+	return c.partialUpdateFlagMultiDocument(ctx, flagName, updates)
+}
+
+func (c *Client) partialUpdateFlagMultiDocument(ctx context.Context, flagName string, updates map[string]any) error {
+	res, err := c.collection.UpdateOne(ctx,
+		bson.M{"_id": flagName},
+		bson.M{"$set": updates},
+	)
+	if err != nil {
+		return fmt.Errorf("updating flag %s: %w", flagName, err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("flag '%s' not found", flagName)
+	}
+	return nil
+}
+
+func (c *Client) partialUpdateFlagSingleDocument(ctx context.Context, flagName string, updates map[string]any) error {
+	// In single-document mode, we need to prefix each update key with the flag name
+	// to target the nested fields correctly. e.g., {"defaultValue": v} becomes {"my-flag.defaultValue": v}
+	prefixedUpdates := make(bson.M)
+	for key, value := range updates {
+		prefixedKey := fmt.Sprintf("%s.%s", flagName, key)
+		prefixedUpdates[prefixedKey] = value
+	}
+
+	res, err := c.collection.UpdateOne(ctx,
+		bson.M{"_id": c.documentID},
+		bson.M{"$set": prefixedUpdates},
+	)
+	if err != nil {
+		return fmt.Errorf("updating flag %s in doc %s: %w", flagName, c.documentID, err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("document '%s' not found", c.documentID)
+	}
+	// Note: This doesn't guarantee the flag itself existed, only the parent doc.
+	// The FlagExists check in the MCP tool is important for this reason.
+	return nil
 }
 
 func (c *Client) DeleteFlag(ctx context.Context, flagName string) error {
@@ -169,9 +227,6 @@ func (c *Client) deleteFlagSingleDocument(ctx context.Context, flagName string) 
 	return nil
 }
 
-// FlagExists checks if a flag definition exists.
-// It handles both single-document and multi-document configurations efficiently
-// by asking the database to count matches rather than returning data.
 func (c *Client) FlagExists(ctx context.Context, flagName string) (bool, error) {
 	var exists bool
 	var err error
@@ -193,7 +248,6 @@ func (c *Client) flagExists(ctx context.Context, flagName string) (bool, error) 
 }
 
 func (c *Client) flagExistsMultiDocument(ctx context.Context, flagName string) (bool, error) {
-	// Use CountDocuments for an efficient existence check without retrieving the document.
 	count, err := c.collection.CountDocuments(ctx, bson.M{"_id": flagName})
 	if err != nil {
 		return false, fmt.Errorf("counting document for flag %s: %w", flagName, err)
@@ -202,7 +256,6 @@ func (c *Client) flagExistsMultiDocument(ctx context.Context, flagName string) (
 }
 
 func (c *Client) flagExistsSingleDocument(ctx context.Context, flagName string) (bool, error) {
-	// Use the $exists operator in the filter to efficiently check for the field's presence.
 	filter := bson.M{
 		"_id":    c.documentID,
 		flagName: bson.M{"$exists": true},
