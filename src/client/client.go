@@ -104,10 +104,9 @@ func (c *Client) getFlagMultiDocument(ctx context.Context, flagName string) (*fl
 
 func (c *Client) getFlagSingleDocument(ctx context.Context, flagName string) (*flag.Definition, error) {
 	var result struct {
-		ID    any                        `bson:"_id"`
 		Flags map[string]flag.Definition `bson:",inline"`
 	}
-	err := c.collection.FindOne(ctx, bson.M{"_id": c.documentID}).Decode(&result)
+	err := c.collection.FindOne(ctx, bson.M{"_id": c.documentID}, options.FindOne().SetProjection(bson.M{flagName: "1"})).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, fmt.Errorf("document %s: %w", c.documentID, err)
@@ -168,6 +167,51 @@ func (c *Client) deleteFlagSingleDocument(ctx context.Context, flagName string) 
 		return err
 	}
 	return nil
+}
+
+// FlagExists checks if a flag definition exists.
+// It handles both single-document and multi-document configurations efficiently
+// by asking the database to count matches rather than returning data.
+func (c *Client) FlagExists(ctx context.Context, flagName string) (bool, error) {
+	var exists bool
+	var err error
+	for i := 0; i < c.maxTries; i++ {
+		exists, err = c.flagExists(ctx, flagName)
+		if err == nil {
+			return exists, nil
+		}
+		c.logger.Error("error checking if flag exists, retrying", slog.Int("attempt", i+1), slog.String("flagName", flagName), slog.Any("error", err))
+	}
+	return false, fmt.Errorf("checking if flag %s exists after %d attempts: %w", flagName, c.maxTries, err)
+}
+
+func (c *Client) flagExists(ctx context.Context, flagName string) (bool, error) {
+	if c.documentID != "" {
+		return c.flagExistsSingleDocument(ctx, flagName)
+	}
+	return c.flagExistsMultiDocument(ctx, flagName)
+}
+
+func (c *Client) flagExistsMultiDocument(ctx context.Context, flagName string) (bool, error) {
+	// Use CountDocuments for an efficient existence check without retrieving the document.
+	count, err := c.collection.CountDocuments(ctx, bson.M{"_id": flagName})
+	if err != nil {
+		return false, fmt.Errorf("counting document for flag %s: %w", flagName, err)
+	}
+	return count > 0, nil
+}
+
+func (c *Client) flagExistsSingleDocument(ctx context.Context, flagName string) (bool, error) {
+	// Use the $exists operator in the filter to efficiently check for the field's presence.
+	filter := bson.M{
+		"_id":    c.documentID,
+		flagName: bson.M{"$exists": true},
+	}
+	count, err := c.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return false, fmt.Errorf("checking existence of flag %s in document %s: %w", flagName, c.documentID, err)
+	}
+	return count > 0, nil
 }
 
 func (c *Client) GetAllFlags(ctx context.Context) (map[string]flag.Definition, error) {
