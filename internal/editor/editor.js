@@ -251,6 +251,30 @@ document.addEventListener("DOMContentLoaded", () => {
                     )
                 );
                 break;
+            case "semVerRule":
+                content.appendChild(
+                    createTextField("Key", rule, "Key", options)
+                );
+                content.appendChild(
+                    createTextField("Constraint", rule, "Constraint", options)
+                );
+                break;
+            case "cronRule":
+                content.appendChild(
+                    createTextField("Key", rule, "Key", options)
+                );
+                content.appendChild(
+                    createTextField("CronSpec", rule, "CronSpec", options)
+                );
+                content.appendChild(
+                    createNumberField(
+                        "Duration (nanoseconds)",
+                        rule,
+                        "Duration",
+                        options
+                    )
+                );
+                break;
             case "andRule":
             case "orRule":
                 content.appendChild(
@@ -333,6 +357,8 @@ document.addEventListener("DOMContentLoaded", () => {
             "IPRangeRule",
             "GeoFenceRule",
             "DateTimeRule",
+            "SemVerRule",
+            "CronRule",
             "AndRule",
             "OrRule",
             "NotRule",
@@ -353,6 +379,9 @@ document.addEventListener("DOMContentLoaded", () => {
             let key = type.charAt(0).toLowerCase() + type.slice(1);
             if (type === "IPRangeRule") {
                 key = "ipRangeRule"; // Use lowercase 'ip' for IPRangeRule.
+            }
+            if (type === "SemVerRule") {
+                key = "semVerRule"; // Use lowercase 'sem' for SemVerRule.
             }
             const newRule = { [key]: {} };
 
@@ -462,6 +491,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getComputedVariant(ruleData) {
+        console.log("Creating rule element for:", ruleData);
+        console.log("Rule data keys:", Object.keys(ruleData));
         const ruleTypeKey = Object.keys(ruleData)[0];
         const rule = ruleData[ruleTypeKey];
 
