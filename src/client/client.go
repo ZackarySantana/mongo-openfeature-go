@@ -145,9 +145,28 @@ func (c *Client) partialUpdateFlag(ctx context.Context, flagName string, updates
 }
 
 func (c *Client) partialUpdateFlagMultiDocument(ctx context.Context, flagName string, updates map[string]any) error {
+	// pull out append_rules if present
+	var toPush bson.M
+	if raw, ok := updates["append_rules"]; ok {
+		slice, ok := raw.([]any)
+		if !ok {
+			return errors.New("append_rules must be a slice")
+		}
+		toPush = bson.M{"rules": bson.M{"$each": slice}}
+		delete(updates, "append_rules")
+	}
+
+	updateDoc := bson.M{}
+	if len(updates) > 0 {
+		updateDoc["$set"] = updates
+	}
+	if toPush != nil {
+		updateDoc["$push"] = toPush
+	}
+
 	res, err := c.collection.UpdateOne(ctx,
 		bson.M{"_id": flagName},
-		bson.M{"$set": updates},
+		updateDoc,
 	)
 	if err != nil {
 		return fmt.Errorf("updating flag %s: %w", flagName, err)
@@ -159,26 +178,38 @@ func (c *Client) partialUpdateFlagMultiDocument(ctx context.Context, flagName st
 }
 
 func (c *Client) partialUpdateFlagSingleDocument(ctx context.Context, flagName string, updates map[string]any) error {
-	// In single-document mode, we need to prefix each update key with the flag name
-	// to target the nested fields correctly. e.g., {"defaultValue": v} becomes {"my-flag.defaultValue": v}
-	prefixedUpdates := make(bson.M)
-	for key, value := range updates {
-		prefixedKey := fmt.Sprintf("%s.%s", flagName, key)
-		prefixedUpdates[prefixedKey] = value
+	setDoc := bson.M{}
+	var pushDoc bson.M
+
+	for k, v := range updates {
+		if k == "append_rules" {
+			pushDoc = bson.M{
+				fmt.Sprintf("%s.rules", flagName): bson.M{"$each": v},
+			}
+			continue
+		}
+		setDoc[fmt.Sprintf("%s.%s", flagName, k)] = v
+	}
+
+	updateDoc := bson.M{}
+	if len(setDoc) > 0 {
+		updateDoc["$set"] = setDoc
+	}
+	if pushDoc != nil {
+		updateDoc["$push"] = pushDoc
 	}
 
 	res, err := c.collection.UpdateOne(ctx,
 		bson.M{"_id": c.documentID},
-		bson.M{"$set": prefixedUpdates},
+		updateDoc,
 	)
 	if err != nil {
-		return fmt.Errorf("updating flag %s in doc %s: %w", flagName, c.documentID, err)
+		return fmt.Errorf("updating flag %s in doc %s: %w",
+			flagName, c.documentID, err)
 	}
 	if res.MatchedCount == 0 {
 		return fmt.Errorf("document '%s' not found", c.documentID)
 	}
-	// Note: This doesn't guarantee the flag itself existed, only the parent doc.
-	// The FlagExists check in the MCP tool is important for this reason.
 	return nil
 }
 

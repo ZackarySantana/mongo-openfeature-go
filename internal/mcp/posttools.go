@@ -110,6 +110,9 @@ func (se *mcpServer) partialUpdateFeatureFlagTool() (mcp.Tool, func(ctx context.
 			mcp.WithString("rules_json",
 				mcp.Description("An optional new JSON array string for the targeting rules. This will completely replace existing rules."),
 			),
+			mcp.WithString("append_rules_json",
+				mcp.Description("An optional JSON array string of rules to append to the existing rules. Existing rules will be preserved."),
+			),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			// Extract the required flag name
@@ -148,6 +151,14 @@ func (se *mcpServer) partialUpdateFeatureFlagTool() (mcp.Tool, func(ctx context.
 					return mcp.NewToolResultError(fmt.Sprintf("invalid JSON for 'rules_json': %v", err)), nil
 				}
 				updates["rules"] = rules
+			}
+
+			if appendRulesJSON := request.GetString("append_rules_json", ""); appendRulesJSON != "" {
+				var appendRules []rule.ConcreteRule
+				if err := json.Unmarshal([]byte(appendRulesJSON), &appendRules); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("invalid JSON for 'append_rules_json': %v", err)), nil
+				}
+				updates["append_rules"] = appendRules
 			}
 
 			// If no update fields were provided, there's nothing to do.
