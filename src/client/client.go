@@ -139,12 +139,15 @@ func (c *Client) DeleteFlag(ctx context.Context, flagName string) error {
 }
 
 func (c *Client) deleteFlag(ctx context.Context, flagName string) error {
-	documentID := flagName
 	if c.documentID != "" {
-		documentID = c.documentID
+		return c.deleteFlagSingleDocument(ctx, flagName)
 	}
+	return c.deleteFlagMultiDocument(ctx, flagName)
 
-	result, err := c.collection.DeleteOne(ctx, bson.M{"_id": documentID})
+}
+
+func (c *Client) deleteFlagMultiDocument(ctx context.Context, flagName string) error {
+	result, err := c.collection.DeleteOne(ctx, bson.M{"_id": flagName})
 	if err != nil {
 		return err
 	}
@@ -152,6 +155,18 @@ func (c *Client) deleteFlag(ctx context.Context, flagName string) error {
 		return errors.New("flag not found")
 	}
 
+	return nil
+}
+
+func (c *Client) deleteFlagSingleDocument(ctx context.Context, flagName string) error {
+	_, err := c.collection.UpdateByID(ctx, c.documentID, bson.M{
+		"$unset": bson.M{
+			flagName: "",
+		},
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
