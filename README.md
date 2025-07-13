@@ -437,7 +437,7 @@ The default values if no environment variables are set are:
 -   `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
 -   `MONGODB_DATABASE`: `feature_flags`
 -   `MONGODB_COLLECTION`: `feature_flags`
--   `MONGODB_DOCUMENT_ID`: `` (uses multi-document mode)
+-   `MONGODB_DOCUMENT_ID`: Nothing (uses multi-document mode). Specifying a document ID will use single-document mode
 -   `EDITOR_PORT`: `8080` (This should only be a number, not a full address.)
 -   `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
 
@@ -521,10 +521,10 @@ docker run -p 8080:8080 -e MONGODB_ENDPOINT=<your_mongodb_endpoint> -e MONGODB_D
 
 The default values if no environment variables are set are:
 
--   `MONGODB_ENDPOINT`: ` ` Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
+-   `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
 -   `MONGODB_DATABASE`: `feature_flags`
 -   `MONGODB_COLLECTION`: `feature_flags`
--   `MONGODB_DOCUMENT_ID`: ` ` (uses multi-document mode, specifying a document ID will use single-document mode)
+-   `MONGODB_DOCUMENT_ID`: Nothing (uses multi-document mode). Specifying a document ID will use single-document mode
 -   `MCP_SERVE`: `stdio` (allowed values are: `http` | `sse` | `stdio`)
 -   `MCP_PORT`: `8080` (This should only be a number, not a full address. Only applicable to `http` and `sse` serving modes.)
 -   `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
