@@ -1,6 +1,3 @@
-// internal/editor/editor.js
-
-// This script will be run on the edit page to build the dynamic form.
 document.addEventListener("DOMContentLoaded", () => {
     const rulesTextarea = document.getElementById("rules");
     const builderContainer = document.getElementById("rule-builder");
@@ -68,7 +65,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const header = document.createElement("div");
         header.className = "rule-header";
 
-        // FIX: Create the documentation link for the header.
         const docLinkBase =
             "https://github.com/ZackarySantana/mongo-openfeature-go?tab=readme-ov-file";
         const docFragment = ruleTypeKey.toLowerCase();
@@ -84,7 +80,11 @@ document.addEventListener("DOMContentLoaded", () => {
         deleteBtn.className = "delete-rule-btn";
         deleteBtn.innerText = "Delete";
         deleteBtn.onclick = () => {
-            parentArray.splice(index, 1);
+            if (options && options.onDelete) {
+                options.onDelete();
+            } else {
+                parentArray.splice(index, 1);
+            }
             render();
         };
         header.appendChild(deleteBtn);
@@ -287,16 +287,33 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
                 break;
             case "notRule":
-                const notWrapper = { Rule: rule.Rule };
-                const notList = createRuleList(notWrapper.Rule, {
-                    hideValueData: true,
-                    hidePriority: true,
-                    parentComputedVariantId: computedVariantId,
-                    parentRuleData: ruleData,
-                    disableAdd: notWrapper.Rule && notWrapper.Rule.length > 0,
-                });
-                notList.className = "rule-list nested";
-                content.appendChild(notList);
+                const notContentWrapper = document.createElement("div");
+                notContentWrapper.className = "rule-list nested";
+
+                if (rule.Rule) {
+                    // If a child rule exists, render it with a custom delete handler.
+                    const childRuleElement = createRuleElement(
+                        rule.Rule,
+                        null, // No parent array needed due to custom onDelete.
+                        0,
+                        {
+                            hideValueData: true,
+                            hidePriority: true,
+                            parentComputedVariantId: computedVariantId,
+                            parentRuleData: ruleData,
+                            onDelete: () => {
+                                rule.Rule = null; // Set the child rule to null.
+                            },
+                        }
+                    );
+                    notContentWrapper.appendChild(childRuleElement);
+                } else {
+                    // If no child rule, show an "Add Rule" button.
+                    // Pass the 'rule' object itself so the button knows to set the 'Rule' property.
+                    const addBtn = createAddRuleButton(rule);
+                    notContentWrapper.appendChild(addBtn);
+                }
+                content.appendChild(notContentWrapper);
                 break;
             case "overrideRule":
                 break;
@@ -340,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return wrapper;
     }
 
-    function createAddRuleButton(parentArray) {
+    function createAddRuleButton(target) {
         const container = document.createElement("div");
         container.className = "add-rule-container";
         const select = document.createElement("select");
@@ -378,10 +395,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const type = select.value;
             let key = type.charAt(0).toLowerCase() + type.slice(1);
             if (type === "IPRangeRule") {
-                key = "ipRangeRule"; // Use lowercase 'ip' for IPRangeRule.
+                key = "ipRangeRule";
             }
             if (type === "SemVerRule") {
-                key = "semVerRule"; // Use lowercase 'sem' for SemVerRule.
+                key = "semVerRule";
             }
             const newRule = { [key]: {} };
 
@@ -389,9 +406,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 newRule[key].Rules = [];
             }
             if (type === "NotRule") {
-                newRule[key].Rule = [];
+                newRule[key].Rule = null;
             }
-            parentArray.push(newRule);
+
+            if (Array.isArray(target)) {
+                target.push(newRule);
+            } else {
+                target.Rule = newRule;
+            }
             render();
         };
         container.appendChild(select);
@@ -491,8 +513,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getComputedVariant(ruleData) {
-        console.log("Creating rule element for:", ruleData);
-        console.log("Rule data keys:", Object.keys(ruleData));
         const ruleTypeKey = Object.keys(ruleData)[0];
         const rule = ruleData[ruleTypeKey];
 
@@ -504,8 +524,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!rule.Rules || rule.Rules.length === 0) return "|()";
                 return `|(${rule.Rules.map(getComputedVariant).join("+")})`;
             case "notRule":
-                if (!rule.Rule || rule.Rule.length === 0) return "!()";
-                return `!(${getComputedVariant(rule.Rule[0])})`;
+                if (!rule.Rule) return "!()";
+                return `!(${getComputedVariant(rule.Rule)})`;
             default:
                 return rule.VariantID || "";
         }
