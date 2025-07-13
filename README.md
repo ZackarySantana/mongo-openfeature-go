@@ -437,6 +437,7 @@ The default values if no environment variables are set are:
 -   `MONGODB_DATABASE`: `feature_flags`
 -   `MONGODB_COLLECTION`: `feature_flags`
 -   `MONGODB_DOCUMENT_ID`: `` (uses multi-document mode)
+-   `EDITOR_PORT`: `8080` (This should only be a number, not a full address.)
 -   `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
 
 #### Editor Examples
