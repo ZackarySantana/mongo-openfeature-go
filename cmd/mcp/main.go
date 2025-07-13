@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	mongoClient, ofClient, cleanup, err := internal.GetConnections()
+	mcpServe := os.Getenv("MCP_SERVE")
+	mongoClient, ofClient, cleanup, err := internal.GetConnections(mcpServe == "http" || mcpServe == "sse")
 	if err != nil {
 		log.Fatalf("FATAL: getting connections: %v", err)
 	}

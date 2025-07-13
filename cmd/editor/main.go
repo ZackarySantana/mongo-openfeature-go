@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	mongoClient, ofClient, cleanup, err := internal.GetConnections()
+	mongoClient, ofClient, cleanup, err := internal.GetConnections(true)
 	if err != nil {
 		log.Fatalf("FATAL: getting connections: %v", err)
 	}

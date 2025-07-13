@@ -34,7 +34,7 @@ func GetMongoDocumentID() string {
 	return "feature_flags"
 }
 
-func GetConnections() (*mongo.Client, *client.Client, func(), error) {
+func GetConnections(outputTestContainerEndpoint bool) (*mongo.Client, *client.Client, func(), error) {
 	database := GetMongoDatabaseName()
 	collection := GetMongoCollectionName()
 	documentID := GetMongoDocumentID()
@@ -48,7 +48,9 @@ func GetConnections() (*mongo.Client, *client.Client, func(), error) {
 			return nil, nil, nil, err
 		}
 
-		log.Println("Connecting to TestContainer Mongo at:", os.Getenv("MONGODB_ENDPOINT"))
+		if outputTestContainerEndpoint {
+			log.Println("Connecting to TestContainer Mongo at:", os.Getenv("MONGODB_ENDPOINT"))
+		}
 	}
 
 	mongoURI := os.Getenv("MONGODB_ENDPOINT")

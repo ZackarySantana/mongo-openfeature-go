@@ -11,6 +11,7 @@ help:
 	@echo "Example: make VERSION=v1.0.0 docker-publish-editor-prod"
 	@echo ""
 	@echo "Available commands:"
+	@echo "  build-mcp-windows-arm64         - Builds the mcp.exe binary for Windows ARM64."
 	@echo "  make docker-build-editor-dev    - Builds the development Docker image for your local architecture."
 	@echo "  make docker-publish-editor-prod - Builds and publishes a multi-arch (AMD64, ARM64) production image."
 	@echo "  make help                       - Shows this help message."
@@ -36,6 +37,9 @@ docker-publish-editor-prod: check-version
 		-t $(IMAGE_NAME):$(TAG) \
 		-t $(IMAGE_NAME):$(VERSION) \
 		--push .
+
+build-mcp-windows-arm64:
+	GOOS=windows GOARCH=arm64 go build -o mcp.exe cmd/mcp/main.go
 
 .PHONY: all
 all: help
