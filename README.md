@@ -429,12 +429,15 @@ or you can use the Docker image:
 docker run -p 8080:8080 -e MONGODB_ENDPOINT=<your_mongodb_endpoint> -e MONGODB_DATABASE=<your_database> -e MONGODB_COLLECTION=<your_collection> -e MONGODB_DOCUMENT_ID=<your_document_id> lidtop/mongo-openfeature-go-editor
 ```
 
+If you're using WSL, you can use `host.docker.internal` in place of `localhost` for the MONGODB_ENDPOINT.
+
 The default values if no environment variables are set are:
 
 -   `MONGODB_ENDPOINT`: Will crash unless `USE_TESTCONTAINER` is set to `true`.
 -   `MONGODB_DATABASE`: `feature_flags`
 -   `MONGODB_COLLECTION`: `feature_flags`
 -   `MONGODB_DOCUMENT_ID`: `` (uses multi-document mode)
+-   `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
 
 #### Editor Examples
 
