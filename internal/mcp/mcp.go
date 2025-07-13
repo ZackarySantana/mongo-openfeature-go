@@ -50,13 +50,21 @@ func (se *mcpServer) Serve() error {
 
 	switch strings.ToLower(serve) {
 	case "sse":
-		fmt.Println("Starting MCP Server Side Events server on :8080")
-		if err := server.NewSSEServer(s).Start("0.0.0.0:8080"); err != nil {
+		port := ":8080"
+		if envPort := os.Getenv("MCP_PORT"); envPort != "" {
+			port = ":" + envPort
+		}
+		fmt.Println("Starting MCP Server Side Events server on http://localhost" + port)
+		if err := server.NewSSEServer(s).Start("0.0.0.0" + port); err != nil {
 			return fmt.Errorf("running SSE server: %w", err)
 		}
 	case "http":
-		fmt.Println("Starting MCP server on :8080")
-		if err := server.NewStreamableHTTPServer(s).Start("0.0.0.0:8080"); err != nil {
+		port := ":8080"
+		if envPort := os.Getenv("MCP_PORT"); envPort != "" {
+			port = ":" + envPort
+		}
+		fmt.Println("Starting MCP server on http://localhost" + port)
+		if err := server.NewStreamableHTTPServer(s).Start("0.0.0.0" + port); err != nil {
 			return fmt.Errorf("running MCP server: %w", err)
 		}
 	default:
