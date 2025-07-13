@@ -3,6 +3,7 @@ package editor
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/zackarysantana/mongo-openfeature-go/src/client"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -24,6 +25,11 @@ func RunEditor(mongoClient *mongo.Client, ofClient *client.Client) error {
 	mux.HandleFunc("POST /delete", handler.HandleDeleteFlag)
 	mux.HandleFunc("GET /", handler.HandleListFlags)
 
-	log.Println("Starting flag manager UI on http://localhost:8080")
-	return http.ListenAndServe(":8080", mux)
+	port := ":8080"
+	if envPort := os.Getenv("EDITOR_PORT"); envPort != "" {
+		port = ":" + envPort
+	}
+
+	log.Println("Starting flag manager UI on http://localhost" + port)
+	return http.ListenAndServe(port, mux)
 }
