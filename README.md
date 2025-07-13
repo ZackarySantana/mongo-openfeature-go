@@ -8,6 +8,7 @@ This repository is a MongoDB provider for the [OpenFeature Go SDK](https://openf
 -   [Control Rules](#control-rules)
 -   [Example](#example)
 -   [Editor](#editor)
+-   [MCP Server](#mcp-server)
 -   [AI Usage](#ai-usage)
 
 ## Features
@@ -433,7 +434,7 @@ If you're using WSL, you can use `host.docker.internal` in place of `localhost` 
 
 The default values if no environment variables are set are:
 
--   `MONGODB_ENDPOINT`: Will crash unless `USE_TESTCONTAINER` is set to `true`.
+-   `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
 -   `MONGODB_DATABASE`: `feature_flags`
 -   `MONGODB_COLLECTION`: `feature_flags`
 -   `MONGODB_DOCUMENT_ID`: `` (uses multi-document mode)
@@ -502,6 +503,36 @@ services:
                 restart: true
 ```
 
+### MCP Server
+
+This repository also includes a [Model Context Protocol](https://modelcontextprotocol.io/introduction) server.
+
+To run the server, you can either clone this repo and run
+
+```bash
+MONGODB_ENDPOINT=<your_mongodb_endpoint> MONGODB_DATABASE=<your_database> MONGODB_COLLECTION=<your_collection> MONGODB_DOCUMENT_ID=<your_document_id> go run cmd/mcp-server/main.go
+```
+
+or you can use the Docker image:
+
+```bash
+docker run -p 8080:8080 -e MONGODB_ENDPOINT=<your_mongodb_endpoint> -e MONGODB_DATABASE=<your_database> -e MONGODB_COLLECTION=<your_collection> -e MONGODB_DOCUMENT_ID=<your_document_id> lidtop/mongo-openfeature-go-mcp-server
+```
+
+The default values if no environment variables are set are:
+
+-   `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
+-   `MONGODB_DATABASE`: `feature_flags`
+-   `MONGODB_COLLECTION`: `feature_flags`
+-   `MONGODB_DOCUMENT_ID`: `` (uses multi-document mode)
+-   `MCP_SERVE`: `http` | `sse` | `stdio`
+-   `MCP_PORT`: `8080` (This should only be a number, not a full address. Only applicable to `http` and `sse` serving modes.)
+-   `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
+
 ### AI Usage
 
 Most of the Go code (that isn't tests), is not AI generated. I used GitHub inline suggestions and occasionally the chat for some Go code boilerplate. Most of the tests are AI generated/assisted. The editor is 99% AI generated because it wasn't my focus with this project and I just wanted something that worked.
+
+```
+
+```
