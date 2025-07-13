@@ -521,18 +521,14 @@ docker run -p 8080:8080 -e MONGODB_ENDPOINT=<your_mongodb_endpoint> -e MONGODB_D
 
 The default values if no environment variables are set are:
 
--   `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
+-   `MONGODB_ENDPOINT`: ` ` Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
 -   `MONGODB_DATABASE`: `feature_flags`
 -   `MONGODB_COLLECTION`: `feature_flags`
--   `MONGODB_DOCUMENT_ID`: `` (uses multi-document mode)
--   `MCP_SERVE`: `http` | `sse` | `stdio`
+-   `MONGODB_DOCUMENT_ID`: ` ` (uses multi-document mode, specifying a document ID will use single-document mode)
+-   `MCP_SERVE`: `stdio` (allowed values are: `http` | `sse` | `stdio`)
 -   `MCP_PORT`: `8080` (This should only be a number, not a full address. Only applicable to `http` and `sse` serving modes.)
 -   `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
 
 ### AI Usage
 
 Most of the Go code (that isn't tests), is not AI generated. I used GitHub inline suggestions and occasionally the chat for some Go code boilerplate. Most of the tests are AI generated/assisted. The editor is 99% AI generated because it wasn't my focus with this project and I just wanted something that worked.
-
-```
-
-```
