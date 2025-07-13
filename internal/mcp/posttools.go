@@ -72,6 +72,15 @@ func (se *mcpServer) insertFeatureFlagTool() (mcp.Tool, func(ctx context.Context
 				flagDef.Rules = rules
 			}
 
+			// Test if the flag already exists
+			exists, err := se.ofClient.FlagExists(ctx, flagName)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("error checking existence of flag '%s': %v", flagName, err)), nil
+			}
+			if exists {
+				return mcp.NewToolResultError(fmt.Sprintf("feature flag '%s' already exists", flagName)), nil
+			}
+
 			// Insert the flag definition using the client
 			if err := se.ofClient.SetFlag(ctx, flagDef); err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("failed to insert feature flag '%s': %v", flagName, err)), nil
