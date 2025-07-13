@@ -44,6 +44,7 @@ func (se *mcpServer) Serve() error {
 	s.AddTool(se.getFeatureFlagTool())
 	s.AddTool(se.getFeatureFlagsTool())
 	s.AddTool(se.insertFeatureFlagTool())
+	s.AddTool(se.partialUpdateFeatureFlagTool())
 
 	serve := os.Getenv("MCP_SERVE")
 
