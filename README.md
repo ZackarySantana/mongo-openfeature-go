@@ -515,6 +515,15 @@ MONGODB_ENDPOINT=<your_mongodb_endpoint> go run cmd/mcp-server/main.go
 USE_TESTCONTAINER=true go run cmd/mcp-server/main.go
 ```
 
+or you can build and run the binary:
+
+```bash
+go build -o mcp-server cmd/mcp-server/main.go
+MONGODB_ENDPOINT=<your_mongodb_endpoint> ./mcp-server
+# or for Testing purposes
+USE_TESTCONTAINER=true ./mcp-server
+```
+
 or you can use the Docker image:
 
 ```bash
