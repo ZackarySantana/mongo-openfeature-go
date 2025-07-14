@@ -1,0 +1,74 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*.*.*" # only run on semver tags
+
+jobs:
+    build:
+        name: Build & Package
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                goos: [linux, windows, darwin]
+                goarch: [amd64, arm64]
+        outputs:
+            artifacts: ${{ steps.pack.outputs.list }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+
+            - name: Setup Go
+              uses: actions/setup-go@v3
+              with:
+                  go-version: "1.20"
+
+            - name: Build binary
+              run: |
+                  mkdir -p out
+                  ext=""
+                  if [ "${{ matrix.goos }}" = "windows" ]; then ext=".exe"; fi
+                  GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+                    go build -o out/myapp-${{ matrix.goos }}-${{ matrix.goarch }}${ext} .
+
+            - name: Package artifact
+              run: |
+                  cd out
+                  case "${{ matrix.goos }}" in
+                    windows)
+                      zip -r myapp-${{ matrix.goos }}-${{ matrix.goarch }}.zip \
+                          myapp-windows-${{ matrix.goarch }}.exe
+                      ;;
+                    *)
+                      tar czf myapp-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz \
+                          myapp-${{ matrix.goos }}-${{ matrix.goarch }}
+                      ;;
+                  esac
+
+            - name: List artifacts
+              id: pack
+              run: |
+                  # emit a newline-delimited list of files so we can reference them
+                  cd out
+                  ls *.zip *.tar.gz > artifact_list.txt
+                  echo "::set-output name=list::$(paste -sd ',' artifact_list.txt)"
+
+    release:
+        name: Create/Update GitHub Release
+        needs: build
+        runs-on: ubuntu-latest
+        if: startsWith(github.ref, 'refs/tags/v')
+        steps:
+            - name: Checkout (needed for token expansion)
+              uses: actions/checkout@v3
+
+            - name: Upload Release Assets
+              uses: softprops/action-gh-release@v2
+              with:
+                  # defaults to the tag that triggered the workflow
+                  files: |
+                      out/*.zip
+                      out/*.tar.gz
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
