@@ -50,6 +50,9 @@ docker-publish-mcp: check-version
 	  -t $(IMAGE_MCP):$(VERSION) \
 	  --push .
 
+# This target is useful for wsl2 users on arm64 machines who want to run the mcp-server
+# binary on Windows with an mcp client.
+.PHONY: build-mcp-windows-amd64
 build-mcp-windows-arm64:
 	@echo "--> Building mcp.exe for windows/arm64"
 	GOOS=windows GOARCH=arm64 go build -o mcp.exe cmd/mcp/main.go
