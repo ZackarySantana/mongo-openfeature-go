@@ -1,9 +1,18 @@
 name: Release
 
+permissions:
+    contents: write # Needed to create/update Releases
+
 on:
     push:
         tags:
             - "v*.*.*" # only run on semver tags
+    workflow_dispatch: # manual trigger
+        inputs:
+            tag_name:
+                description: "Tag to build & release"
+                required: true
+                default: ""
 
 jobs:
     build_and_release:
@@ -44,6 +53,9 @@ jobs:
                   else
                     tar czf ${base}.tar.gz ${base}
                   fi
+
+            - name: Debug list outputs
+              run: ls -l out
 
             - name: Create/Update GitHub Release & Upload Asset
               uses: softprops/action-gh-release@v2
