@@ -31,8 +31,8 @@ jobs:
                     ext=".exe"
                   fi
                   GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
-                    go build -o out/${{ matrix.app }}-\
-                    ${{ matrix.goos }}-${{ matrix.goarch }}${ext} \
+                    go build \
+                    -o out/${{ matrix.app }}-${{ matrix.goos }}-${{ matrix.goarch }}${ext} \
                     ./cmd/${{ matrix.app }}/main.go
 
             - name: Package
