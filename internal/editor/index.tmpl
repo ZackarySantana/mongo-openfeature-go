@@ -1,48 +1,54 @@
 {{define "main"}}
-    <h2>All Feature Flags</h2>
-
-    <!-- NEW: Search bar -->
-    <div class="search-container">
-        <input type="text" id="search-box" placeholder="Search for flags...">
+    <div class="list-header">
+        <h1 class="list-header__title">Feature flags</h1>
+        <div class="list-header__search">
+            <span class="list-header__search-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input id="search-box" class="input" type="search" placeholder="Search flags by name..." autocomplete="off">
+        </div>
+        <a href="/edit/" class="btn btn--primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            New flag
+        </a>
     </div>
 
-    <ul id="flag-list">
-        {{range .Flags}}
-            <li>
-                <!-- Flag name and link -->
-                <a href="/edit/{{.FlagName}}">{{.FlagName}}</a>
-
-                <!-- NEW: Delete form for each flag -->
-                <form action="/delete" method="post" onsubmit="return confirm('Are you sure you want to delete flag \'{{.FlagName}}\'?');">
-                    <input type="hidden" name="flagName" value="{{.FlagName}}">
-                    <button type="submit" class="list-delete-btn">Delete</button>
-                </form>
-            </li>
-        {{else}}
-            <li>No flags found.</li>
-        {{end}}
-    </ul>
-    <hr>
-    <a href="/edit/"><button class="create-btn">Create New Flag</button></a>
-
-    <!-- NEW: JavaScript for live filtering -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchBox = document.getElementById('search-box');
-            const flagList = document.getElementById('flag-list');
-            const flags = Array.from(flagList.getElementsByTagName('li'));
-
-            searchBox.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                flags.forEach(flag => {
-                    const flagName = flag.textContent.toLowerCase();
-                    if (flagName.includes(searchTerm)) {
-                        flag.style.display = 'flex';
-                    } else {
-                        flag.style.display = 'none';
-                    }
-                });
-            });
-        });
-    </script>
+    {{if .Flags}}
+        <ul id="flag-list" class="flag-list">
+            {{range .Flags}}
+                <li id="flag-{{.FlagName}}" class="flag-row" data-name="{{.FlagName}}" data-href="/edit/{{.FlagName}}" role="link" tabindex="0" aria-label="Edit flag {{.FlagName}}">
+                    <div class="flag-row__main">
+                        <span class="flag-row__name">{{.FlagName}}</span>
+                    </div>
+                    <div class="flag-row__meta">
+                        {{if .DefaultVariant}}
+                            <span class="chip chip--primary" title="Default variant">{{.DefaultVariant}}</span>
+                        {{end}}
+                        <span class="chip" title="Rule count">{{len .Rules}} rule{{if ne (len .Rules) 1}}s{{end}}</span>
+                    </div>
+                    <div class="flag-row__actions">
+                        <button
+                            type="button"
+                            class="btn btn--danger btn--sm confirm-btn"
+                            data-confirm="idle"
+                            data-flag="{{.FlagName}}"
+                            hx-post="/delete"
+                            hx-vals='{"flagName": "{{.FlagName}}"}'
+                            hx-target="#toast-region"
+                            hx-swap="beforeend"
+                            hx-trigger="confirmed"
+                        >Delete</button>
+                    </div>
+                </li>
+            {{end}}
+        </ul>
+    {{else}}
+        <div class="empty-state">
+            <div class="empty-state__title">No flags yet</div>
+            <div>Create your first feature flag to get started.</div>
+            <div class="empty-state__actions">
+                <a href="/edit/" class="btn btn--primary">Create flag</a>
+            </div>
+        </div>
+    {{end}}
 {{end}}

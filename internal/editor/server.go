@@ -16,7 +16,12 @@ func RunEditor(mongoClient *mongo.Client, ofClient *client.Client) error {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /editor.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
 		http.ServeFile(w, r, "internal/editor/editor.js")
+	})
+	mux.HandleFunc("GET /editor.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		http.ServeFile(w, r, "internal/editor/editor.css")
 	})
 
 	mux.HandleFunc("GET /edit/", handler.HandleEditFlag)

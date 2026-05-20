@@ -3,211 +3,85 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Flag Manager</title>
-    <!-- This script runs in the <head> to prevent the theme flash -->
     <script>
         (function() {
             function getInitialTheme() {
-                const savedTheme = localStorage.getItem('theme');
-                if (savedTheme) { return savedTheme; }
+                var saved = localStorage.getItem('theme');
+                if (saved) return saved;
                 return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             }
             document.documentElement.setAttribute('data-theme', getInitialTheme());
         })();
     </script>
-    <style>
-        /* --- CSS Variables for Theming --- */
-        :root {
-            --bg-color: #f4f4f9;
-            --card-bg-color: white;
-            --text-color: #333;
-            --link-color: #0056b3;
-            --border-color: #ddd;
-            --input-bg-color: white;
-            --input-border-color: #ccc;
-            --button-link-bg: #007bff;
-            --button-link-hover-bg: #0056b3;
-            --button-delete-bg: #dc3545;
-            --button-delete-hover-bg: #c82333;
-            --button-create-bg: #28a745;
-            --button-create-hover-bg: #218838;
-            --header-bg-color: #f0f0f0;
-            --readonly-bg-color: #e9ecef;
-        }
-
-        html[data-theme="dark"] {
-            --bg-color: #121212;
-            --card-bg-color: #1e1e1e;
-            --text-color: #e0e0e0;
-            --link-color: #64b5f6;
-            --border-color: #444;
-            --input-bg-color: #2c2c2c;
-            --input-border-color: #555;
-            --button-link-bg: #2196f3;
-            --button-link-hover-bg: #1976d2;
-            --button-delete-bg: #b71c1c;
-            --button-delete-hover-bg: #c62828;
-            --button-create-bg: #4caf50;
-            --button-create-hover-bg: #388e3c;
-            --header-bg-color: #2a2a2a;
-            --readonly-bg-color: #222;
-        }
-
-        /* --- General Styles using Variables --- */
-        body {
-            font-family: sans-serif;
-            margin: 2em;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.2s, color 0.2s;
-        }
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2em;
-        }
-        a { color: var(--link-color); text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        .container {
-            max-width: 960px;
-            margin: auto;
-            background-color: var(--card-bg-color);
-            padding: 2em;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        ul { list-style-type: none; padding: 0; }
-        li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5em;
-            border-bottom: 1px solid var(--border-color);
-        }
-        li:hover { background-color: var(--bg-color); }
-        form > div { margin-bottom: 1em; }
-        label { display: block; margin-bottom: 0.5em; font-weight: bold; }
-        input[type="text"], input[type="number"], textarea, select {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid var(--input-border-color);
-            background-color: var(--input-bg-color);
-            color: var(--text-color);
-            border-radius: 4px;
-        }
-        input:read-only {
-            background-color: var(--readonly-bg-color);
-            cursor: not-allowed;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: var(--button-link-bg);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover { background-color: var(--button-link-hover-bg); }
-        .create-btn { background-color: var(--button-create-bg); }
-        .create-btn:hover { background-color: var(--button-create-hover-bg); }
-        .delete-btn { background-color: var(--button-delete-bg); }
-        .delete-btn:hover { background-color: var(--button-delete-hover-bg); }
-        .list-delete-btn {
-            background-color: var(--button-delete-bg);
-            padding: 4px 8px;
-            font-size: 0.8em;
-        }
-        .list-delete-btn:hover { background-color: var(--button-delete-hover-bg); }
-        .search-container { margin-bottom: 1em; }
-        #search-box { padding: 10px; font-size: 1em; }
-        textarea.json-input { min-height: 80px; font-family: monospace; white-space: pre; }
-
-        /* --- RESTORED Rule Editor Styles using Variables --- */
-        .rule-element {
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            margin-bottom: 1em;
-            background: var(--bg-color);
-        }
-        .rule-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--header-bg-color);
-            padding: 0.5em;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .rule-header a { font-weight: bold; }
-        .rule-content {
-            padding: 1em;
-        }
-        .form-field {
-            margin-bottom: 0.75em;
-        }
-        .form-field label {
-            font-weight: normal;
-            font-size: 0.9em;
-        }
-        .delete-rule-btn {
-            background-color: var(--button-delete-bg);
-            padding: 4px 8px;
-            font-size: 0.8em;
-        }
-        .delete-rule-btn:hover {
-            background-color: var(--button-delete-hover-bg);
-        }
-        .add-rule-container {
-            display: flex;
-            align-items: center;
-            margin-top: 1em;
-            padding-block: 1em;
-            border-top: 1px dashed var(--border-color);
-        }
-        .add-rule-container select {
-            padding: 10px;
-            margin-right: 1em;
-            font-size: 0.9em;
-        }
-    </style>
+    <link rel="stylesheet" href="/editor.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
 </head>
 <body>
-    <div class="container">
-        <nav>
-            <a href="/">Home</a>
-            <button id="theme-toggle" style="padding: 6px 12px; font-size: 0.9em;">Toggle Theme</button>
-        </nav>
-        {{template "main" .}}
+    <div class="app">
+        <div class="app-header">
+        <header class="topbar">
+            <a href="/" class="topbar__brand" aria-label="Flag manager home">
+                <span class="topbar__brand-mark" aria-hidden="true"></span>
+                Flag Manager
+            </a>
+            {{block "breadcrumb" .}}{{end}}
+            <div class="topbar__spacer"></div>
+            <button id="theme-toggle" type="button" class="btn btn--ghost btn--icon theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+        </header>
+
+        {{block "toolbar" .}}{{end}}
+        </div>
+
+        <main class="page">
+            {{template "main" .}}
+        </main>
     </div>
 
+    <div id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            const themeToggle = document.getElementById('theme-toggle');
-            const htmlEl = document.documentElement;
-
-            function updateButtonText(theme) {
-                 if (theme === 'dark') {
-                    themeToggle.innerText = 'Switch to Light Mode';
-                } else {
-                    themeToggle.innerText = 'Switch to Dark Mode';
-                }
+        (function() {
+            var btn = document.getElementById('theme-toggle');
+            var root = document.documentElement;
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    var cur = root.getAttribute('data-theme') || 'light';
+                    var next = cur === 'dark' ? 'light' : 'dark';
+                    root.setAttribute('data-theme', next);
+                    localStorage.setItem('theme', next);
+                });
             }
 
-            function toggleTheme() {
-                const currentTheme = htmlEl.getAttribute('data-theme') || 'light';
-                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                htmlEl.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                updateButtonText(newTheme);
+            var header = document.querySelector('.app-header');
+            if (!header || typeof ResizeObserver === 'undefined') return;
+            function syncHeaderHeight() {
+                root.style.setProperty('--layout-header-h', header.offsetHeight + 'px');
             }
+            syncHeaderHeight();
+            new ResizeObserver(syncHeaderHeight).observe(header);
+        })();
 
-            updateButtonText(htmlEl.getAttribute('data-theme'));
-            themeToggle.addEventListener('click', toggleTheme);
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            var toast = evt.detail.target.querySelector ? evt.detail.target : null;
+            if (!toast) return;
+            toast.querySelectorAll('.toast').forEach(function(t) {
+                setTimeout(function() {
+                    t.classList.add('is-leaving');
+                    setTimeout(function() { t.remove(); }, 220);
+                }, 3200);
+            });
         });
     </script>
 
-    <script src="/editor.js"></script>
+    <script src="/editor.js" defer></script>
 </body>
 </html>
 {{end}}
+
+{{define "breadcrumb"}}{{end}}
+{{define "toolbar"}}{{end}}
