@@ -8,7 +8,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/zackarysantana/mongo-openfeature-go/src/client"
 	"github.com/zackarysantana/mongo-openfeature-go/src/flag"
 	"github.com/zackarysantana/mongo-openfeature-go/src/rule"
@@ -16,21 +18,29 @@ import (
 )
 
 type WebHandler struct {
-	client    *client.Client
-	templates map[string]*template.Template
-	toast     *template.Template
+	client     *client.Client
+	templates  map[string]*template.Template
+	toast      *template.Template
+	testResult *template.Template
 }
 
 func NewWebHandler(c *client.Client) *WebHandler {
 	templates := make(map[string]*template.Template)
 	layout := template.Must(template.ParseFiles("internal/editor/layout.tmpl"))
 	templates["index"] = template.Must(template.Must(layout.Clone()).ParseFiles("internal/editor/index.tmpl"))
-	templates["edit"] = template.Must(template.Must(layout.Clone()).ParseFiles("internal/editor/edit.tmpl"))
+	// The edit page renders the test-result partial as a placeholder for the
+	// inline tester, so parse it into the same tree.
+	templates["edit"] = template.Must(template.Must(layout.Clone()).ParseFiles(
+		"internal/editor/edit.tmpl",
+		"internal/editor/_test_result.tmpl",
+	))
 	toast := template.Must(template.ParseFiles("internal/editor/_toast.tmpl"))
+	testResult := template.Must(template.ParseFiles("internal/editor/_test_result.tmpl"))
 	return &WebHandler{
-		client:    c,
-		templates: templates,
-		toast:     toast,
+		client:     c,
+		templates:  templates,
+		toast:      toast,
+		testResult: testResult,
 	}
 }
 
@@ -97,6 +107,12 @@ func (h *WebHandler) HandleEditFlag(w http.ResponseWriter, r *http.Request) {
 		"Flag":             def,
 		"RulesJSON":        string(rulesJSON),
 		"DefaultValueJSON": string(defaultValueJSON),
+		// Context key fields come from the saved rules so the tester lines up with
+		// what HandleEvaluateFlag evaluates.
+		"ContextKeyFields": rule.CollectContextKeyFields(def.Rules),
+		// Pre-render the tester output region with an empty placeholder so the
+		// layout reserves space on first paint and doesn't shift after Run test.
+		"TestResult": testResultData{},
 	}
 	h.renderTemplate(w, "edit", viewData)
 }
@@ -231,6 +247,138 @@ func jsonEscape(s string) string {
 		return string(b[1 : len(b)-1])
 	}
 	return s
+}
+
+// testResultData is rendered by _test_result.tmpl as the inline tester's output.
+type testResultData struct {
+	// Matched is true when a rule matched and the result is not the default.
+	Matched bool
+	Variant string
+	Reason  string
+	// ValueJSON is the resolved value pretty-printed as JSON.
+	ValueJSON string
+	// Error, when set, replaces the normal output with a failure message.
+	Error string
+	// MatchedRuleIndex is the 0-based index of the winning top-level rule in the
+	// saved definition, or -1 when the default value was used.
+	MatchedRuleIndex int
+	// MatchedRuleType is the rule variant key (e.g. "exactMatchRule").
+	MatchedRuleType string
+	// MatchedRuleLabel is a human-readable label for the matched rule row.
+	MatchedRuleLabel string
+}
+
+// HandleEvaluateFlag evaluates the saved flag against the user-supplied JSON
+// context from the sidebar tester and returns the result partial. The partial
+// is the entire response body (htmx swaps it into #test-output).
+func (h *WebHandler) HandleEvaluateFlag(w http.ResponseWriter, r *http.Request) {
+	flagName := r.PathValue("name")
+	if flagName == "" {
+		h.writeTestResult(w, testResultData{Error: "Missing flag name."})
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		h.writeTestResult(w, testResultData{Error: "Could not parse form: " + err.Error()})
+		return
+	}
+
+	contextStr := strings.TrimSpace(r.FormValue("context"))
+	if contextStr == "" {
+		contextStr = "{}"
+	}
+
+	def, err := h.client.GetFlag(r.Context(), flagName)
+	if err != nil {
+		log.Printf("ERROR loading flag '%s' for evaluation: %v", flagName, err)
+		h.writeTestResult(w, testResultData{Error: "Flag not found: " + flagName})
+		return
+	}
+
+	ctx := map[string]any{}
+	if err := json.Unmarshal([]byte(contextStr), &ctx); err != nil {
+		h.writeTestResult(w, testResultData{Error: "Invalid context JSON: " + err.Error()})
+		return
+	}
+
+	// Date/cron/etc. rules expect time.Time, but JSON only carries strings.
+	// Best-effort: any string that parses as RFC3339 is upgraded to time.Time
+	// so time-based rules behave the same way they would in real Go callers.
+	convertTimestamps(ctx)
+
+	match := def.EvaluateWithMatch(ctx)
+
+	valueJSON, marshalErr := json.MarshalIndent(match.Value, "", "  ")
+	if marshalErr != nil {
+		valueJSON = []byte(fmt.Sprintf("%v", match.Value))
+	}
+
+	result := testResultData{
+		Matched:   match.Detail.Reason == openfeature.TargetingMatchReason,
+		Variant:   match.Detail.Variant,
+		Reason:    string(match.Detail.Reason),
+		ValueJSON: string(valueJSON),
+	}
+
+	if result.Matched && match.MatchedRuleIndex >= 0 && match.MatchedRuleIndex < len(def.Rules) {
+		matched := def.Rules[match.MatchedRuleIndex]
+		result.MatchedRuleIndex = match.MatchedRuleIndex
+		result.MatchedRuleType = matched.RuleType()
+		result.MatchedRuleLabel = formatMatchedRuleLabel(match.MatchedRuleIndex, matched)
+	}
+
+	h.writeTestResult(w, result)
+}
+
+// formatMatchedRuleLabel builds the display string shown in the tester result,
+// mirroring the rules overview format: "#2 exactMatchRule" with optional variant.
+func formatMatchedRuleLabel(index int, r rule.ConcreteRule) string {
+	label := fmt.Sprintf("#%d %s", index+1, r.RuleType())
+	if v := r.Variant(); v != "" {
+		label += " · " + v
+	}
+	return label
+}
+
+// writeTestResult renders the result partial as the response body.
+func (h *WebHandler) writeTestResult(w http.ResponseWriter, result testResultData) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := h.testResult.ExecuteTemplate(w, "test-result", result); err != nil {
+		log.Printf("ERROR rendering test result: %v", err)
+	}
+}
+
+// convertTimestamps walks a decoded JSON map and replaces any string that parses
+// as RFC3339 with the corresponding time.Time. This lets date-based rules
+// (DateTimeRule, CronRule) be tested through the JSON context input.
+func convertTimestamps(m map[string]any) {
+	for k, v := range m {
+		switch val := v.(type) {
+		case string:
+			if t, err := time.Parse(time.RFC3339, val); err == nil {
+				m[k] = t
+			}
+		case map[string]any:
+			convertTimestamps(val)
+		case []any:
+			convertTimestampsSlice(val)
+		}
+	}
+}
+
+func convertTimestampsSlice(s []any) {
+	for i, v := range s {
+		switch val := v.(type) {
+		case string:
+			if t, err := time.Parse(time.RFC3339, val); err == nil {
+				s[i] = t
+			}
+		case map[string]any:
+			convertTimestamps(val)
+		case []any:
+			convertTimestampsSlice(val)
+		}
+	}
 }
 
 // renderTemplate is a helper to execute the correct template.

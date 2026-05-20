@@ -127,3 +127,48 @@ func (c *ConcreteRule) GetPriority() int {
 func (c *ConcreteRule) IsOverride() bool {
 	return c.OverrideRule != nil
 }
+
+// RuleType returns the JSON/BSON key for the active rule variant (e.g.
+// "exactMatchRule"), or an empty string when the concrete rule is empty.
+func (c *ConcreteRule) RuleType() string {
+	switch {
+	case c.ExactMatchRule != nil:
+		return "exactMatchRule"
+	case c.RegexRule != nil:
+		return "regexRule"
+	case c.ExistsRule != nil:
+		return "existsRule"
+	case c.FractionalRule != nil:
+		return "fractionalRule"
+	case c.RangeRule != nil:
+		return "rangeRule"
+	case c.InListRule != nil:
+		return "inListRule"
+	case c.PrefixRule != nil:
+		return "prefixRule"
+	case c.SuffixRule != nil:
+		return "suffixRule"
+	case c.ContainsRule != nil:
+		return "containsRule"
+	case c.IPRangeRule != nil:
+		return "ipRangeRule"
+	case c.GeoFenceRule != nil:
+		return "geoFenceRule"
+	case c.DateTimeRule != nil:
+		return "dateTimeRule"
+	case c.SemVerRule != nil:
+		return "semVerRule"
+	case c.CronRule != nil:
+		return "cronRule"
+	case c.AndRule != nil:
+		return "andRule"
+	case c.OrRule != nil:
+		return "orRule"
+	case c.NotRule != nil:
+		return "notRule"
+	case c.OverrideRule != nil:
+		return "overrideRule"
+	default:
+		return ""
+	}
+}

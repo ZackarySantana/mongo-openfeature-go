@@ -28,6 +28,7 @@ func RunEditor(mongoClient *mongo.Client, ofClient *client.Client) error {
 	mux.HandleFunc("GET /edit/{name}", handler.HandleEditFlag)
 	mux.HandleFunc("POST /save", handler.HandleSaveFlag)
 	mux.HandleFunc("POST /delete", handler.HandleDeleteFlag)
+	mux.HandleFunc("POST /test/{name}", handler.HandleEvaluateFlag)
 	mux.HandleFunc("GET /", handler.HandleListFlags)
 
 	port := ":8080"

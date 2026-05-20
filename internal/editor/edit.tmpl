@@ -64,7 +64,7 @@
                                    {{if .Flag.FlagName}}readonly{{end}}
                                    required
                                    placeholder="my-feature-flag">
-                            <span class="field__hint">{{if .Flag.FlagName}}The name cannot be changed after creation.{{else}}Use a stable identifier &mdash; this can't be changed later.{{end}}</span>
+                            <span class="field__hint">{{if .Flag.FlagName}}The name cannot be changed after creation.{{else}}Pick a stable identifier. You cannot change it after the flag is created.{{end}}</span>
                         </div>
 
                         <div class="field">
@@ -106,7 +106,7 @@
                     <header class="card__header">
                     <div>
                         <div class="card__title">Rules</div>
-                        <div class="card__subtitle">Evaluated by priority &mdash; higher priority wins.</div>
+                        <div class="card__subtitle">Higher priority wins when multiple rules match.</div>
                     </div>
                     <div class="card__header-actions">
                         <button type="button" class="btn btn--ghost btn--sm" data-rules-collapse-all aria-label="Collapse all rules">
@@ -134,6 +134,74 @@
                     <textarea id="rules" name="rules" style="display:none;">{{.RulesJSON}}</textarea>
                 </div>
             </section>
+
+            {{if .Flag.FlagName}}
+            <section class="card tester-card" data-no-dirty aria-label="Flag tester">
+                <header class="card__header tester-card__header">
+                    <div>
+                        <div class="card__title">Test</div>
+                        <div class="card__subtitle">Evaluates the saved version</div>
+                    </div>
+                </header>
+                <div class="card__body tester-card__body">
+                    <div class="tester-section tester-section--context">
+                        <div class="tester-section__head">
+                            <span class="field__label">Context</span>
+                        </div>
+                        {{if .ContextKeyFields}}
+                        <div class="tester-rows" data-tester-rows>
+                            {{range .ContextKeyFields}}
+                            <div class="tester-field" data-tester-row data-context-key="{{.Key}}">
+                                <label class="tester-row__key">{{.Key}}</label>
+                                <input class="input input--mono tester-row__value"
+                                       data-tester-value
+                                       type="text"
+                                       placeholder="Leave empty to omit"
+                                       autocomplete="off"
+                                       aria-label="Value for {{.Key}}">
+                                {{if .Rules}}
+                                <ul class="tester-field__refs" aria-label="Rules that use {{.Key}}">
+                                    {{range .Rules}}
+                                    <li>
+                                        <a href="#"
+                                           class="tester-field__ref"
+                                           data-rule-link
+                                           data-rule-index="{{.TopLevelIndex}}"
+                                           title="Scroll to this rule">{{.Label}}</a>
+                                    </li>
+                                    {{end}}
+                                </ul>
+                                {{end}}
+                            </div>
+                            {{end}}
+                        </div>
+                        {{else}}
+                        <p class="tester-section__empty">No context keys in the saved rules for this flag. Run test to evaluate with an empty context.</p>
+                        {{end}}
+                        <p class="tester-section__hint">Keys come from the saved rules. Only fields you fill in are sent. Leave a value empty to simulate that key missing from the context. Values are parsed as JSON when possible (<code>42</code>, <code>true</code>, <code>[1,2]</code>). RFC3339 strings become timestamps.</p>
+                    </div>
+
+                    <button type="button"
+                            class="btn btn--primary tester-run"
+                            hx-post="/test/{{.Flag.FlagName}}"
+                            hx-vals='js:{context: window.buildTesterContext()}'
+                            hx-target="#test-output"
+                            hx-swap="innerHTML">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Run test
+                    </button>
+
+                    <div class="tester-section tester-section--result">
+                        <div class="tester-section__head">
+                            <span class="field__label">Result</span>
+                        </div>
+                        <div id="test-output" class="tester-output" aria-live="polite">
+                            {{template "test-result" .TestResult}}
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {{end}}
         </div>
     </form>
 {{end}}

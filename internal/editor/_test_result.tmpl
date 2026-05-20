@@ -1,0 +1,49 @@
+{{define "test-result"}}
+{{- $modifier := "test-out--empty" -}}
+{{- $reason := "Not evaluated yet" -}}
+{{- $variant := "" -}}
+{{- $value := "" -}}
+{{- $placeholder := true -}}
+{{- if .Error -}}
+    {{- $modifier = "test-out--error" -}}
+    {{- $reason = "Error" -}}
+    {{- $value = .Error -}}
+    {{- $placeholder = false -}}
+{{- else if .Reason -}}
+    {{- if .Matched -}}{{- $modifier = "test-out--matched" -}}{{- else -}}{{- $modifier = "test-out--default" -}}{{- end -}}
+    {{- $reason = .Reason -}}
+    {{- $variant = .Variant -}}
+    {{- $value = .ValueJSON -}}
+    {{- $placeholder = false -}}
+{{- end -}}
+<div class="test-out {{$modifier}}" role="status" data-test-out>
+    <div class="test-out__row">
+        <span class="test-out__label">Variant</span>
+        <span class="chip chip--mono test-out__chip">{{if $variant}}{{$variant}}{{else}}None{{end}}</span>
+    </div>
+    <div class="test-out__row">
+        <span class="test-out__label">Reason</span>
+        <span class="chip test-out__chip">{{$reason}}</span>
+    </div>
+    <div class="test-out__row">
+        <span class="test-out__label">Rule</span>
+        {{- if .Matched -}}
+            <a href="#"
+               class="test-out__rule-link"
+               data-rule-link
+               data-rule-index="{{.MatchedRuleIndex}}"
+               title="Scroll to this rule in the editor">{{.MatchedRuleLabel}}</a>
+        {{- else if $placeholder -}}
+            <span class="test-out__rule-text">None</span>
+        {{- else if .Error -}}
+            <span class="test-out__rule-text">None</span>
+        {{- else -}}
+            <span class="test-out__rule-text">Default</span>
+        {{- end -}}
+    </div>
+    <div class="test-out__row test-out__row--block">
+        <span class="test-out__label">Value</span>
+        <pre class="test-out__pre{{if $placeholder}} test-out__pre--placeholder{{end}}"><code>{{if $placeholder}}Click Run test to evaluate this flag.{{else}}{{$value}}{{end}}</code></pre>
+    </div>
+</div>
+{{end}}

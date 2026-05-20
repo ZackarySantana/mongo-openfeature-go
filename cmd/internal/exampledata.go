@@ -19,7 +19,7 @@ func InsertExampleData(ofClient *client.Client) error {
 			{ExactMatchRule: &rule.ExactMatchRule{
 				Key:       "user_id",
 				VariantID: "exact-rule",
-				KeyValue:  "12345",
+				KeyValue:  "abc123",
 				ValueData: "database_default_2",
 			}},
 			{RegexRule: &rule.RegexRule{
@@ -59,6 +59,7 @@ func InsertExampleData(ofClient *client.Client) error {
 			{OverrideRule: &rule.OverrideRule{
 				VariantID: "override-rule",
 				ValueData: "override_default",
+				Priority:  -1,
 			}},
 		},
 	}

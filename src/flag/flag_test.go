@@ -123,4 +123,34 @@ func TestDefinition(t *testing.T) {
 		assert.Equal(t, "override_3", val)
 		assert.Equal(t, "v_override_3", detail.Variant)
 	})
+
+	t.Run("EvaluateWithMatchReturnsWinningRuleIndex", func(t *testing.T) {
+		def := &Definition{
+			Rules: []rule.ConcreteRule{
+				standardRule1,
+				standardRule2,
+			},
+		}
+
+		match := def.EvaluateWithMatch(matchingCtx)
+
+		assert.Equal(t, "standard_2", match.Value)
+		assert.Equal(t, 1, match.MatchedRuleIndex)
+		assert.Equal(t, openfeature.TargetingMatchReason, match.Detail.Reason)
+	})
+
+	t.Run("EvaluateWithMatchReturnsNegativeIndexForDefault", func(t *testing.T) {
+		def := &Definition{
+			DefaultValue: "fallback",
+			Rules: []rule.ConcreteRule{
+				{ExistsRule: &rule.ExistsRule{Key: "missing_key", ValueData: "nope"}},
+			},
+		}
+
+		match := def.EvaluateWithMatch(matchingCtx)
+
+		assert.Equal(t, "fallback", match.Value)
+		assert.Equal(t, -1, match.MatchedRuleIndex)
+		assert.Equal(t, openfeature.DefaultReason, match.Detail.Reason)
+	})
 }
