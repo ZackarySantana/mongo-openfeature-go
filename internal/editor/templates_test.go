@@ -119,11 +119,12 @@ func TestEditPageRendersTesterForSavedFlag(t *testing.T) {
 	render := func(name string, fields []rule.ContextKeyField) string {
 		var buf bytes.Buffer
 		data := map[string]any{
-			"Flag":             struct{ FlagName, DefaultVariant string }{name, ""},
-			"RulesJSON":        "[]",
-			"DefaultValueJSON": `""`,
-			"ContextKeyFields": fields,
-			"TestResult":       testResultData{},
+			"Flag":                 struct{ FlagName, DefaultVariant string }{name, ""},
+			"RulesJSON":            "[]",
+			"DefaultValueJSON":     `""`,
+			"ContextKeyFields":     fields,
+			"ContextKeyFieldsJSON": `[]`,
+			"TestResult":           testResultData{},
 		}
 		if err := h.templates["edit"].ExecuteTemplate(&buf, "layout", data); err != nil {
 			t.Fatalf("rendering edit page: %v", err)
@@ -163,6 +164,15 @@ func TestEditPageRendersTesterForSavedFlag(t *testing.T) {
 	}
 	if !strings.Contains(saved, "Only fields you fill in are sent") {
 		t.Errorf("expected context behavior description")
+	}
+	if !strings.Contains(saved, `data-tester-source`) {
+		t.Errorf("expected saved/draft source toggle")
+	}
+	if !strings.Contains(saved, "Uses the version stored on the server") {
+		t.Errorf("expected saved source subtitle")
+	}
+	if !strings.Contains(saved, "Draft") {
+		t.Errorf("expected draft source option in toggle")
 	}
 	if strings.Contains(saved, "data-tester-add") {
 		t.Errorf("did not expect add-field control")

@@ -333,7 +333,146 @@
         const card = document.querySelector(".tester-card");
         if (!card) return;
         const rowsHost = card.querySelector("[data-tester-rows]");
+        const emptyEl = card.querySelector("[data-tester-empty]");
+        const subtitleEl = card.querySelector("[data-tester-subtitle]");
+        const hintEl = card.querySelector("[data-tester-hint]");
         if (!rowsHost) return;
+
+        const copy = {
+            saved: {
+                subtitle: "Uses the version stored on the server",
+                empty: "No context keys in the saved rules for this flag. Run test to evaluate with an empty context.",
+            },
+            draft: {
+                subtitle: "Uses your unsaved changes from the editor",
+                empty: "No context keys in your current rule edits. Run test to evaluate with an empty context.",
+            },
+        };
+
+        function collectContextValues() {
+            const values = {};
+            card.querySelectorAll("[data-tester-row]").forEach(function (row) {
+                const key = row.getAttribute("data-context-key");
+                const valEl = row.querySelector("[data-tester-value]");
+                if (key && valEl) values[key] = valEl.value;
+            });
+            return values;
+        }
+
+        function renderContextRows(fields) {
+            const values = collectContextValues();
+            rowsHost.innerHTML = "";
+
+            if (!fields.length) {
+                rowsHost.hidden = true;
+                if (emptyEl) {
+                    emptyEl.hidden = false;
+                    emptyEl.textContent = copy[getTesterSource()].empty;
+                }
+                return;
+            }
+
+            rowsHost.hidden = false;
+            if (emptyEl) emptyEl.hidden = true;
+
+            fields.forEach(function (field) {
+                const row = document.createElement("div");
+                row.className = "tester-field";
+                row.setAttribute("data-tester-row", "");
+                row.setAttribute("data-context-key", field.key);
+
+                const label = document.createElement("label");
+                label.className = "tester-row__key";
+                label.textContent = field.key;
+
+                const input = document.createElement("input");
+                input.className = "input input--mono tester-row__value";
+                input.setAttribute("data-tester-value", "");
+                input.type = "text";
+                input.placeholder = "Leave empty to omit";
+                input.autocomplete = "off";
+                input.setAttribute("aria-label", "Value for " + field.key);
+                if (values[field.key] != null) {
+                    input.value = values[field.key];
+                }
+
+                row.appendChild(label);
+                row.appendChild(input);
+
+                if (field.rules && field.rules.length) {
+                    const refs = document.createElement("ul");
+                    refs.className = "tester-field__refs";
+                    refs.setAttribute(
+                        "aria-label",
+                        "Rules that use " + field.key,
+                    );
+                    field.rules.forEach(function (ref) {
+                        const li = document.createElement("li");
+                        const link = document.createElement("a");
+                        link.href = "#";
+                        link.className = "tester-field__ref";
+                        link.setAttribute("data-rule-link", "");
+                        link.setAttribute(
+                            "data-rule-index",
+                            String(ref.topLevelIndex),
+                        );
+                        link.title = "Scroll to this rule";
+                        link.textContent = ref.label;
+                        li.appendChild(link);
+                        refs.appendChild(li);
+                    });
+                    row.appendChild(refs);
+                }
+
+                rowsHost.appendChild(row);
+            });
+
+            wireTestResultLinks(rowsHost);
+        }
+
+        function refreshTesterContextUI() {
+            const source = getTesterSource();
+            const text = copy[source] || copy.saved;
+            if (subtitleEl) subtitleEl.textContent = text.subtitle;
+            if (hintEl) {
+                hintEl.innerHTML =
+                    source === "saved"
+                        ? "Context keys come from the saved rules. Only fields you fill in are sent. Leave a value empty to simulate that key missing from the context. Values are parsed as JSON when possible (<code>42</code>, <code>true</code>, <code>[1,2]</code>). RFC3339 strings become timestamps."
+                        : "Context keys come from your current rule edits. Only fields you fill in are sent. Leave a value empty to simulate that key missing from the context. Values are parsed as JSON when possible (<code>42</code>, <code>true</code>, <code>[1,2]</code>). RFC3339 strings become timestamps.";
+            }
+
+            const fields =
+                source === "draft"
+                    ? parseDraftContextKeyFields()
+                    : parseSavedContextKeyFields(card);
+            renderContextRows(fields);
+        }
+
+        card.querySelectorAll("[data-tester-source]").forEach(function (input) {
+            input.addEventListener("change", refreshTesterContextUI);
+        });
+
+        const builder = document.getElementById("rule-builder");
+        if (builder) {
+            builder.addEventListener(
+                "input",
+                debounce(function () {
+                    if (getTesterSource() === "draft") {
+                        refreshTesterContextUI();
+                    }
+                }, 200),
+            );
+        }
+
+        refreshTesterContextUI();
+
+        document.body.addEventListener("htmx:configRequest", function (evt) {
+            const elt = evt.detail && evt.detail.elt;
+            if (!elt || !elt.classList.contains("tester-run")) return;
+            if (typeof window.syncEditorRulesForTest === "function") {
+                window.syncEditorRulesForTest();
+            }
+        });
 
         // Enter inside a value field is a power-user shortcut for "Run test".
         rowsHost.addEventListener("keydown", function (evt) {
@@ -419,6 +558,153 @@
         return JSON.stringify(obj);
     };
 
+    function getTesterSource() {
+        const checked = document.querySelector(
+            ".tester-card [data-tester-source]:checked",
+        );
+        return checked ? checked.value : "saved";
+    }
+    window.getTesterSource = getTesterSource;
+
+    function ruleDataTypeKey(ruleData) {
+        return Object.keys(ruleData).find(function (k) {
+            return k.charAt(0) !== "_";
+        });
+    }
+
+    function directContextKeys(ruleTypeKey, rule) {
+        if (!rule) return [];
+        switch (ruleTypeKey) {
+            case "exactMatchRule":
+            case "regexRule":
+            case "existsRule":
+            case "fractionalRule":
+            case "rangeRule":
+            case "inListRule":
+            case "prefixRule":
+            case "suffixRule":
+            case "containsRule":
+            case "ipRangeRule":
+            case "dateTimeRule":
+            case "semVerRule":
+                return rule.Key ? [rule.Key] : [];
+            case "geoFenceRule": {
+                const keys = [];
+                if (rule.LatKey) keys.push(rule.LatKey);
+                if (rule.LngKey) keys.push(rule.LngKey);
+                return keys;
+            }
+            case "cronRule":
+                return rule.Key ? [rule.Key] : [];
+            default:
+                return [];
+        }
+    }
+
+    function formatContextKeyRefLabel(topLevelIndex, ruleTypeKey, nestedIn) {
+        if (nestedIn) {
+            return (
+                "#" + (topLevelIndex + 1) + " " + nestedIn + " · " + ruleTypeKey
+            );
+        }
+        return "#" + (topLevelIndex + 1) + " " + ruleTypeKey;
+    }
+
+    function appendContextKeyRef(byKey, key, ref) {
+        if (!byKey[key]) byKey[key] = [];
+        const exists = byKey[key].some(function (existing) {
+            return (
+                existing.topLevelIndex === ref.topLevelIndex &&
+                existing.label === ref.label
+            );
+        });
+        if (!exists) byKey[key].push(ref);
+    }
+
+    function walkRuleForContextKeys(ruleData, topLevelIndex, nestedIn, byKey) {
+        const ruleTypeKey = ruleDataTypeKey(ruleData);
+        if (!ruleTypeKey) return;
+        const rule = ruleData[ruleTypeKey];
+
+        directContextKeys(ruleTypeKey, rule).forEach(function (key) {
+            appendContextKeyRef(byKey, key, {
+                topLevelIndex: topLevelIndex,
+                label: formatContextKeyRefLabel(
+                    topLevelIndex,
+                    ruleTypeKey,
+                    nestedIn,
+                ),
+            });
+        });
+
+        if (
+            (ruleTypeKey === "andRule" || ruleTypeKey === "orRule") &&
+            Array.isArray(rule.Rules)
+        ) {
+            rule.Rules.forEach(function (child) {
+                walkRuleForContextKeys(
+                    child,
+                    topLevelIndex,
+                    ruleTypeKey,
+                    byKey,
+                );
+            });
+        } else if (ruleTypeKey === "notRule" && rule.Rule) {
+            walkRuleForContextKeys(
+                rule.Rule,
+                topLevelIndex,
+                ruleTypeKey,
+                byKey,
+            );
+        }
+    }
+
+    function collectContextKeyFieldsFromRules(rules) {
+        const byKey = {};
+        if (!Array.isArray(rules)) return [];
+        rules.forEach(function (ruleData, index) {
+            walkRuleForContextKeys(ruleData, index, "", byKey);
+        });
+        return Object.keys(byKey)
+            .sort()
+            .map(function (key) {
+                return { key: key, rules: byKey[key] };
+            });
+    }
+
+    function parseSavedContextKeyFields(card) {
+        const raw = card.getAttribute("data-saved-context-fields");
+        if (!raw) return [];
+        try {
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed.map(function (field) {
+                return {
+                    key: field.Key,
+                    rules: (field.Rules || []).map(function (ref) {
+                        return {
+                            topLevelIndex: ref.TopLevelIndex,
+                            label: ref.Label,
+                        };
+                    }),
+                };
+            });
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function parseDraftContextKeyFields() {
+        const rulesEl = document.getElementById("rules");
+        if (!rulesEl) return [];
+        try {
+            const parsed = JSON.parse(rulesEl.value || "[]");
+            return collectContextKeyFieldsFromRules(parsed);
+        } catch (e) {
+            return [];
+        }
+    }
+
     /* ============================================================
        Rule builder
        ============================================================ */
@@ -452,6 +738,7 @@
 
         // Touch immediately so the hidden textarea always has clean JSON.
         syncNow();
+        window.syncEditorRulesForTest = syncNow;
 
         let nextRuleId = 1;
 

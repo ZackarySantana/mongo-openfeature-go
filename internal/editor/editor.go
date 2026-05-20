@@ -98,18 +98,18 @@ func (h *WebHandler) HandleEditFlag(w http.ResponseWriter, r *http.Request) {
 
 	rulesJSON, _ := json.MarshalIndent(def.Rules, "", "  ")
 	defaultValueJSON, _ := json.Marshal(def.DefaultValue)
+	contextKeyFieldsJSON, _ := json.Marshal(rule.CollectContextKeyFields(def.Rules))
 
 	if string(defaultValueJSON) == "null" {
 		defaultValueJSON = []byte(`""`)
 	}
 
 	viewData := map[string]any{
-		"Flag":             def,
-		"RulesJSON":        string(rulesJSON),
-		"DefaultValueJSON": string(defaultValueJSON),
-		// Context key fields come from the saved rules so the tester lines up with
-		// what HandleEvaluateFlag evaluates.
-		"ContextKeyFields": rule.CollectContextKeyFields(def.Rules),
+		"Flag":                 def,
+		"RulesJSON":            string(rulesJSON),
+		"DefaultValueJSON":     string(defaultValueJSON),
+		"ContextKeyFields":     rule.CollectContextKeyFields(def.Rules),
+		"ContextKeyFieldsJSON": string(contextKeyFieldsJSON),
 		// Pre-render the tester output region with an empty placeholder so the
 		// layout reserves space on first paint and doesn't shift after Run test.
 		"TestResult": testResultData{},
@@ -268,9 +268,9 @@ type testResultData struct {
 	MatchedRuleLabel string
 }
 
-// HandleEvaluateFlag evaluates the saved flag against the user-supplied JSON
-// context from the sidebar tester and returns the result partial. The partial
-// is the entire response body (htmx swaps it into #test-output).
+// HandleEvaluateFlag evaluates a flag against the user-supplied JSON context from
+// the inline tester and returns the result partial. By default it uses the saved
+// definition from storage; when source=draft it evaluates the unsaved form state.
 func (h *WebHandler) HandleEvaluateFlag(w http.ResponseWriter, r *http.Request) {
 	flagName := r.PathValue("name")
 	if flagName == "" {
@@ -288,10 +288,10 @@ func (h *WebHandler) HandleEvaluateFlag(w http.ResponseWriter, r *http.Request) 
 		contextStr = "{}"
 	}
 
-	def, err := h.client.GetFlag(r.Context(), flagName)
+	def, err := h.loadFlagForEvaluation(r, flagName)
 	if err != nil {
-		log.Printf("ERROR loading flag '%s' for evaluation: %v", flagName, err)
-		h.writeTestResult(w, testResultData{Error: "Flag not found: " + flagName})
+		log.Printf("ERROR preparing flag '%s' for evaluation: %v", flagName, err)
+		h.writeTestResult(w, testResultData{Error: err.Error()})
 		return
 	}
 
@@ -328,6 +328,57 @@ func (h *WebHandler) HandleEvaluateFlag(w http.ResponseWriter, r *http.Request) 
 	}
 
 	h.writeTestResult(w, result)
+}
+
+// loadFlagForEvaluation returns the flag definition to evaluate. source=saved
+// (the default) loads from storage; source=draft builds from the edit form.
+func (h *WebHandler) loadFlagForEvaluation(r *http.Request, flagName string) (*flag.Definition, error) {
+	source := strings.TrimSpace(r.FormValue("source"))
+	if source == "" {
+		source = "saved"
+	}
+
+	switch source {
+	case "saved":
+		def, err := h.client.GetFlag(r.Context(), flagName)
+		if err != nil {
+			return nil, fmt.Errorf("flag not found: %s", flagName)
+		}
+		return def, nil
+	case "draft":
+		return parseDraftDefinition(r, flagName)
+	default:
+		return nil, fmt.Errorf("unknown evaluation source %q", source)
+	}
+}
+
+func parseDraftDefinition(r *http.Request, flagName string) (*flag.Definition, error) {
+	rulesStr := strings.TrimSpace(r.FormValue("rules"))
+	if rulesStr == "" {
+		rulesStr = "[]"
+	}
+
+	var rules []rule.ConcreteRule
+	if err := json.Unmarshal([]byte(rulesStr), &rules); err != nil {
+		return nil, fmt.Errorf("invalid rules JSON: %w", err)
+	}
+
+	defaultValueStr := strings.TrimSpace(r.FormValue("defaultValue"))
+	if defaultValueStr == "" {
+		defaultValueStr = "null"
+	}
+
+	var defaultValue any
+	if err := json.Unmarshal([]byte(defaultValueStr), &defaultValue); err != nil {
+		return nil, fmt.Errorf("invalid default value JSON: %w", err)
+	}
+
+	return &flag.Definition{
+		FlagName:       flagName,
+		DefaultVariant: r.FormValue("defaultVariant"),
+		DefaultValue:   defaultValue,
+		Rules:          rules,
+	}, nil
 }
 
 // formatMatchedRuleLabel builds the display string shown in the tester result,

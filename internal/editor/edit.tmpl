@@ -136,11 +136,22 @@
             </section>
 
             {{if .Flag.FlagName}}
-            <section class="card tester-card" data-no-dirty aria-label="Flag tester">
+            <section class="card tester-card" data-no-dirty aria-label="Flag tester"
+                     data-saved-context-fields="{{.ContextKeyFieldsJSON}}">
                 <header class="card__header tester-card__header">
                     <div>
                         <div class="card__title">Test</div>
-                        <div class="card__subtitle">Evaluates the saved version</div>
+                        <div class="card__subtitle" data-tester-subtitle>Uses the version stored on the server</div>
+                    </div>
+                    <div class="tester-source" role="radiogroup" aria-label="Which rule set to evaluate">
+                        <label class="tester-source__option">
+                            <input type="radio" name="tester-source" value="saved" data-tester-source checked>
+                            <span>Saved</span>
+                        </label>
+                        <label class="tester-source__option">
+                            <input type="radio" name="tester-source" value="draft" data-tester-source>
+                            <span>Draft</span>
+                        </label>
                     </div>
                 </header>
                 <div class="card__body tester-card__body">
@@ -148,8 +159,8 @@
                         <div class="tester-section__head">
                             <span class="field__label">Context</span>
                         </div>
-                        {{if .ContextKeyFields}}
-                        <div class="tester-rows" data-tester-rows>
+                        <p class="tester-section__empty" data-tester-empty{{if .ContextKeyFields}} hidden{{end}}>No context keys in the saved rules for this flag. Run test to evaluate with an empty context.</p>
+                        <div class="tester-rows" data-tester-rows{{if not .ContextKeyFields}} hidden{{end}}>
                             {{range .ContextKeyFields}}
                             <div class="tester-field" data-tester-row data-context-key="{{.Key}}">
                                 <label class="tester-row__key">{{.Key}}</label>
@@ -175,16 +186,13 @@
                             </div>
                             {{end}}
                         </div>
-                        {{else}}
-                        <p class="tester-section__empty">No context keys in the saved rules for this flag. Run test to evaluate with an empty context.</p>
-                        {{end}}
-                        <p class="tester-section__hint">Keys come from the saved rules. Only fields you fill in are sent. Leave a value empty to simulate that key missing from the context. Values are parsed as JSON when possible (<code>42</code>, <code>true</code>, <code>[1,2]</code>). RFC3339 strings become timestamps.</p>
+                        <p class="tester-section__hint" data-tester-hint>Context keys come from the saved rules. Only fields you fill in are sent. Leave a value empty to simulate that key missing from the context. Values are parsed as JSON when possible (<code>42</code>, <code>true</code>, <code>[1,2]</code>). RFC3339 strings become timestamps.</p>
                     </div>
 
                     <button type="button"
                             class="btn btn--primary tester-run"
                             hx-post="/test/{{.Flag.FlagName}}"
-                            hx-vals='js:{context: window.buildTesterContext()}'
+                            hx-vals='js:{context: window.buildTesterContext(), source: window.getTesterSource(), rules: document.getElementById("rules").value, defaultVariant: document.getElementById("defaultVariant").value, defaultValue: document.getElementById("defaultValue").value}'
                             hx-target="#test-output"
                             hx-swap="innerHTML">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>

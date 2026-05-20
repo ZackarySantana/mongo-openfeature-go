@@ -1216,6 +1216,55 @@ hr {
 
 .tester-card__header {
     flex: 0 0 auto;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.tester-source {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: 2px;
+    background-color: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.tester-source__option {
+    position: relative;
+}
+
+.tester-source__option input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+}
+
+.tester-source__option span {
+    display: block;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-radius: calc(var(--radius-md) - 2px);
+    cursor: pointer;
+    user-select: none;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.tester-source__option input:checked + span {
+    background-color: var(--bg-elevated);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+}
+
+.tester-source__option input:focus-visible + span {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
 }
 
 .tester-card__body {
