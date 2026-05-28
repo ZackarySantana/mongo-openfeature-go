@@ -1,3 +1,30 @@
+{{define "flag-row"}}
+    <li id="flag-{{.FlagName}}" class="flag-row" data-name="{{.FlagName}}" data-href="/edit/{{.FlagName}}" role="link" tabindex="0" aria-label="Edit flag {{.FlagName}}">
+        <div class="flag-row__main">
+            <span class="flag-row__name">{{.FlagName}}</span>
+        </div>
+        <div class="flag-row__meta">
+            {{if .DefaultVariant}}
+                <span class="chip chip--primary" title="Default variant">{{.DefaultVariant}}</span>
+            {{end}}
+            <span class="chip" title="Rule count">{{len .Rules}} rule{{if ne (len .Rules) 1}}s{{end}}</span>
+        </div>
+        <div class="flag-row__actions">
+            <button
+                type="button"
+                class="btn btn--danger btn--sm confirm-btn"
+                data-confirm="idle"
+                data-flag="{{.FlagName}}"
+                hx-post="/delete"
+                hx-vals='{"flagName": "{{.FlagName}}"}'
+                hx-target="#toast-region"
+                hx-swap="beforeend"
+                hx-trigger="confirmed"
+            >Delete</button>
+        </div>
+    </li>
+{{end}}
+
 {{define "main"}}
     <div class="list-header">
         <h1 class="list-header__title">Feature flags</h1>
@@ -7,48 +34,63 @@
             </span>
             <input id="search-box" class="input" type="search" placeholder="Search flags by name..." autocomplete="off">
         </div>
-        <a href="/edit/" class="btn btn--primary">
+        <button type="button" class="btn btn--primary" data-new-flag-open>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
             New flag
-        </a>
+        </button>
     </div>
 
-    {{if .Flags}}
-        <ul id="flag-list" class="flag-list">
-            {{range .Flags}}
-                <li id="flag-{{.FlagName}}" class="flag-row" data-name="{{.FlagName}}" data-href="/edit/{{.FlagName}}" role="link" tabindex="0" aria-label="Edit flag {{.FlagName}}">
-                    <div class="flag-row__main">
-                        <span class="flag-row__name">{{.FlagName}}</span>
-                    </div>
-                    <div class="flag-row__meta">
-                        {{if .DefaultVariant}}
-                            <span class="chip chip--primary" title="Default variant">{{.DefaultVariant}}</span>
-                        {{end}}
-                        <span class="chip" title="Rule count">{{len .Rules}} rule{{if ne (len .Rules) 1}}s{{end}}</span>
-                    </div>
-                    <div class="flag-row__actions">
-                        <button
-                            type="button"
-                            class="btn btn--danger btn--sm confirm-btn"
-                            data-confirm="idle"
-                            data-flag="{{.FlagName}}"
-                            hx-post="/delete"
-                            hx-vals='{"flagName": "{{.FlagName}}"}'
-                            hx-target="#toast-region"
-                            hx-swap="beforeend"
-                            hx-trigger="confirmed"
-                        >Delete</button>
-                    </div>
-                </li>
+    {{if .HasFlags}}
+        <div id="flag-list" class="flag-list">
+            {{range .FlagSections}}
+            <section class="flag-section" data-flag-section>
+                {{if .Name}}
+                <h2 class="flag-section__title">{{.Name}}</h2>
+                {{else}}
+                <h2 class="flag-section__title">Uncategorized</h2>
+                {{end}}
+                <ul class="flag-section__list">
+                    {{range .Flags}}
+                        {{template "flag-row" .}}
+                    {{end}}
+                </ul>
+            </section>
             {{end}}
-        </ul>
+        </div>
     {{else}}
         <div class="empty-state">
             <div class="empty-state__title">No flags yet</div>
             <div>Create your first feature flag to get started.</div>
             <div class="empty-state__actions">
-                <a href="/edit/" class="btn btn--primary">Create flag</a>
+                <button type="button" class="btn btn--primary" data-new-flag-open>Create flag</button>
             </div>
         </div>
     {{end}}
+
+    <dialog class="new-flag-dialog" id="new-flag-dialog" data-flag-names="{{.FlagNamesJSON}}">
+        <form id="new-flag-form" class="new-flag-dialog__form" method="dialog">
+            <header class="new-flag-dialog__header">
+                <h2 class="new-flag-dialog__title" id="new-flag-dialog-title">New flag</h2>
+                <p class="new-flag-dialog__lead">Choose a name for your flag. You will configure rules on the next screen.</p>
+            </header>
+            <div class="field">
+                <label class="field__label" for="new-flag-name">Flag name</label>
+                <input class="input input--mono"
+                       id="new-flag-name"
+                       name="flagName"
+                       type="text"
+                       required
+                       autocomplete="off"
+                       spellcheck="false"
+                       placeholder="my-feature-flag"
+                       aria-describedby="new-flag-name-hint new-flag-name-error">
+                <span class="field__hint" id="new-flag-name-hint">Use letters, numbers, hyphens, and underscores. Start with a letter.</span>
+                <span class="field__error" id="new-flag-name-error" data-new-flag-error hidden></span>
+            </div>
+            <footer class="new-flag-dialog__footer">
+                <button type="button" class="btn btn--ghost" data-new-flag-cancel>Cancel</button>
+                <button type="submit" class="btn btn--primary">Continue</button>
+            </footer>
+        </form>
+    </dialog>
 {{end}}

@@ -15,10 +15,12 @@ COPY --from=base /app/binary /root/binary
 
 # Copy tmpl files
 COPY --from=base /app/internal/editor/*.tmpl /root/internal/editor/
-# Copy editor.js file
+# Copy static assets
 COPY --from=base /app/internal/editor/editor.js /root/internal/editor/
+COPY --from=base /app/internal/editor/assistant.js /root/internal/editor/
+COPY --from=base /app/internal/editor/editor.css /root/internal/editor/
 
-EXPOSE 8080
+EXPOSE 3000
 
 WORKDIR /root
 CMD ["/root/binary"]

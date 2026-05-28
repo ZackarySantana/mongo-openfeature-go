@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -75,25 +76,36 @@ func (h *WebHandler) HandleListFlags(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	data := map[string]any{"Flags": flags}
+	flagNames := make([]string, 0, len(flags))
+	for _, f := range flags {
+		flagNames = append(flagNames, f.FlagName)
+	}
+	flagNamesJSON, _ := json.Marshal(flagNames)
+	data := map[string]any{
+		"FlagSections":  BuildFlagListSections(flags),
+		"HasFlags":      len(flags) > 0,
+		"FlagNamesJSON": string(flagNamesJSON),
+	}
 	h.renderTemplate(w, "index", data)
 }
 
-// HandleEditFlag shows the form to edit a flag, or a blank form for a new one.
+// HandleEditFlag shows the form to edit an existing flag or configure a new one
+// that was named on the home page. Bare /edit/ redirects to the flag list.
 func (h *WebHandler) HandleEditFlag(w http.ResponseWriter, r *http.Request) {
 	flagName := r.PathValue("name")
-	var def *flag.Definition
-
-	if flagName != "" {
-		var err error
-		def, err = h.client.GetFlag(r.Context(), flagName)
-		if err != nil {
-			log.Printf("Flag '%s' not found or error: %v", flagName, err)
-		}
+	if flagName == "" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
 	}
 
-	if def == nil {
-		def = &flag.Definition{Rules: []rule.ConcreteRule{}}
+	var def *flag.Definition
+	def, err := h.client.GetFlag(r.Context(), flagName)
+	if err != nil {
+		log.Printf("Flag '%s' not found or error: %v", flagName, err)
+		def = &flag.Definition{
+			FlagName: flagName,
+			Rules:    []rule.ConcreteRule{},
+		}
 	}
 
 	rulesJSON, _ := json.MarshalIndent(def.Rules, "", "  ")
@@ -106,6 +118,7 @@ func (h *WebHandler) HandleEditFlag(w http.ResponseWriter, r *http.Request) {
 
 	viewData := map[string]any{
 		"Flag":                 def,
+		"Categories":           h.listCategories(r.Context()),
 		"RulesJSON":            string(rulesJSON),
 		"DefaultValueJSON":     string(defaultValueJSON),
 		"ContextKeyFields":     rule.CollectContextKeyFields(def.Rules),
@@ -156,6 +169,7 @@ func (h *WebHandler) HandleSaveFlag(w http.ResponseWriter, r *http.Request) {
 		FlagName:       flagName,
 		DefaultVariant: r.FormValue("defaultVariant"),
 		DefaultValue:   defaultValue,
+		Category:       strings.TrimSpace(r.FormValue("category")),
 		Rules:          rules,
 	}
 
@@ -170,6 +184,9 @@ func (h *WebHandler) HandleSaveFlag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if htmx {
+		if r.FormValue("afterSave") == "list" {
+			w.Header().Set("HX-Redirect", "/")
+		}
 		h.writeToast(w, http.StatusOK, toastData{
 			Title: "Flag saved",
 			Body:  fmt.Sprintf("Changes to %q have been saved.", flagName),
@@ -335,7 +352,7 @@ func (h *WebHandler) HandleEvaluateFlag(w http.ResponseWriter, r *http.Request) 
 func (h *WebHandler) loadFlagForEvaluation(r *http.Request, flagName string) (*flag.Definition, error) {
 	source := strings.TrimSpace(r.FormValue("source"))
 	if source == "" {
-		source = "saved"
+		source = "draft"
 	}
 
 	switch source {
@@ -430,6 +447,18 @@ func convertTimestampsSlice(s []any) {
 			convertTimestampsSlice(val)
 		}
 	}
+}
+
+// listCategories returns sorted category names from all saved flags.
+func (h *WebHandler) listCategories(ctx context.Context) []string {
+	if h.client == nil {
+		return nil
+	}
+	flags, err := h.client.GetAllFlags(ctx)
+	if err != nil {
+		return nil
+	}
+	return CollectCategories(flags)
 }
 
 // renderTemplate is a helper to execute the correct template.

@@ -31,6 +31,13 @@
                     hx-trigger="confirmed"
                 >Delete</button>
             {{end}}
+            <button type="submit"
+                    form="flag-form"
+                    name="afterSave"
+                    value="list"
+                    class="btn btn--ghost btn--sm">
+                Save &amp; return to list
+            </button>
             <button type="submit" form="flag-form" class="btn btn--primary btn--sm">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 Save flag
@@ -65,6 +72,51 @@
                                    required
                                    placeholder="my-feature-flag">
                             <span class="field__hint">{{if .Flag.FlagName}}The name cannot be changed after creation.{{else}}Pick a stable identifier. You cannot change it after the flag is created.{{end}}</span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="category">Category</label>
+                            <div class="category-combobox" data-category-combobox>
+                                <div class="category-combobox__control">
+                                    <input class="category-combobox__input"
+                                           type="text"
+                                           id="category"
+                                           name="category"
+                                           value="{{.Flag.Category}}"
+                                           placeholder="None"
+                                           autocomplete="off"
+                                           spellcheck="false"
+                                           role="combobox"
+                                           aria-autocomplete="list"
+                                           aria-expanded="false"
+                                           aria-controls="category-menu">
+                                    <button type="button"
+                                            class="category-combobox__toggle"
+                                            aria-label="Show categories"
+                                            tabindex="-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                                    </button>
+                                </div>
+                                <div class="category-combobox__menu" id="category-menu" role="listbox" hidden>
+                                    <button type="button"
+                                            class="category-combobox__option category-combobox__option--clear"
+                                            data-value=""
+                                            role="option">
+                                        <span class="category-combobox__option-label">Uncategorized</span>
+                                        <span class="category-combobox__option-meta">No category</span>
+                                    </button>
+                                    {{range .Categories}}
+                                    <button type="button"
+                                            class="category-combobox__option"
+                                            data-value="{{.}}"
+                                            role="option">
+                                        <span class="category-combobox__option-label">{{.}}</span>
+                                    </button>
+                                    {{end}}
+                                    <p class="category-combobox__empty"{{if .Categories}} hidden{{end}}>No existing categories yet. Type a name to create one.</p>
+                                </div>
+                            </div>
+                            <span class="field__hint">Organize flags on the home page. Leave empty to keep this flag uncategorized.</span>
                         </div>
 
                         <div class="field">
@@ -141,16 +193,16 @@
                 <header class="card__header tester-card__header">
                     <div>
                         <div class="card__title">Test</div>
-                        <div class="card__subtitle" data-tester-subtitle>Uses the version stored on the server</div>
+                        <div class="card__subtitle" data-tester-subtitle>Uses your unsaved changes from the editor</div>
                     </div>
                     <div class="tester-source" role="radiogroup" aria-label="Which rule set to evaluate">
                         <label class="tester-source__option">
-                            <input type="radio" name="tester-source" value="saved" data-tester-source checked>
-                            <span>Saved</span>
+                            <input type="radio" name="tester-source" value="draft" data-tester-source checked>
+                            <span>Draft</span>
                         </label>
                         <label class="tester-source__option">
-                            <input type="radio" name="tester-source" value="draft" data-tester-source>
-                            <span>Draft</span>
+                            <input type="radio" name="tester-source" value="saved" data-tester-source>
+                            <span>Saved</span>
                         </label>
                     </div>
                 </header>

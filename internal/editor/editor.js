@@ -44,7 +44,7 @@
         {
             label: "Time",
             options: [
-                { type: "DateTimeRule", desc: "Within an RFC3339 window" },
+                { type: "DateTimeRule", desc: "Within a date and time window" },
                 { type: "SemVerRule", desc: "Semantic version constraint" },
                 { type: "CronRule", desc: "Active during a cron window" },
             ],
@@ -228,14 +228,324 @@
         const box = document.getElementById("search-box");
         const list = document.getElementById("flag-list");
         if (!box || !list) return;
-        const rows = Array.from(list.querySelectorAll(".flag-row"));
+
         box.addEventListener("input", function () {
             const q = box.value.trim().toLowerCase();
-            rows.forEach((row) => {
-                const name = (row.dataset.name || "").toLowerCase();
-                row.style.display = !q || name.includes(q) ? "" : "none";
+            list.querySelectorAll("[data-flag-section]").forEach(
+                function (section) {
+                    let visibleCount = 0;
+                    section
+                        .querySelectorAll(".flag-row")
+                        .forEach(function (row) {
+                            const name = (row.dataset.name || "").toLowerCase();
+                            const show = !q || name.includes(q);
+                            row.style.display = show ? "" : "none";
+                            if (show) visibleCount++;
+                        });
+                    section.hidden = visibleCount === 0;
+                },
+            );
+        });
+    }
+
+    /* ============================================================
+       List page: new flag dialog
+       ============================================================ */
+
+    function sanitizeFlagNameValue(value) {
+        let out = "";
+        for (let i = 0; i < value.length; i++) {
+            const ch = value[i];
+            if (out.length === 0) {
+                if (/[a-zA-Z]/.test(ch)) out += ch;
+            } else if (/[a-zA-Z0-9_-]/.test(ch)) {
+                out += ch;
+            }
+        }
+        return out;
+    }
+
+    function setupNewFlagDialog() {
+        const dialog = document.getElementById("new-flag-dialog");
+        const form = document.getElementById("new-flag-form");
+        const input = document.getElementById("new-flag-name");
+        const errorEl = document.querySelector("[data-new-flag-error]");
+        if (!dialog || !form || !input) return;
+
+        const existingNames = new Set();
+        try {
+            const parsed = JSON.parse(
+                dialog.getAttribute("data-flag-names") || "[]",
+            );
+            if (Array.isArray(parsed)) {
+                parsed.forEach(function (name) {
+                    existingNames.add(name);
+                });
+            }
+        } catch (e) {
+            console.error("Invalid flag name list:", e);
+        }
+
+        function showError(message) {
+            if (!errorEl) return;
+            errorEl.textContent = message;
+            errorEl.hidden = false;
+            input.setAttribute("aria-invalid", "true");
+        }
+
+        function clearError() {
+            if (!errorEl) return;
+            errorEl.textContent = "";
+            errorEl.hidden = true;
+            input.removeAttribute("aria-invalid");
+        }
+
+        function openDialog() {
+            form.reset();
+            clearError();
+            dialog.showModal();
+            input.focus();
+        }
+
+        function closeDialog() {
+            dialog.close();
+        }
+
+        document
+            .querySelectorAll("[data-new-flag-open]")
+            .forEach(function (btn) {
+                btn.addEventListener("click", openDialog);
+            });
+
+        document
+            .querySelectorAll("[data-new-flag-cancel]")
+            .forEach(function (btn) {
+                btn.addEventListener("click", closeDialog);
+            });
+
+        dialog.addEventListener("click", function (evt) {
+            if (evt.target === dialog) closeDialog();
+        });
+
+        dialog.addEventListener("close", clearError);
+
+        input.addEventListener("beforeinput", function (evt) {
+            if (
+                evt.inputType === "insertFromPaste" ||
+                evt.inputType === "insertFromDrop" ||
+                evt.data == null ||
+                evt.data === ""
+            ) {
+                return;
+            }
+            const start = input.selectionStart || 0;
+            const end = input.selectionEnd || 0;
+            const attempt =
+                input.value.slice(0, start) + evt.data + input.value.slice(end);
+            if (sanitizeFlagNameValue(attempt) !== attempt) {
+                evt.preventDefault();
+            }
+        });
+
+        input.addEventListener("input", function () {
+            const sanitized = sanitizeFlagNameValue(input.value);
+            if (sanitized !== input.value) {
+                input.value = sanitized;
+            }
+            clearError();
+        });
+
+        form.addEventListener("submit", function (evt) {
+            evt.preventDefault();
+            const name = input.value.trim();
+            if (!name) {
+                showError("Enter a flag name.");
+                input.focus();
+                return;
+            }
+            if (existingNames.has(name)) {
+                showError("A flag with this name already exists.");
+                input.focus();
+                return;
+            }
+            window.location.href = "/edit/" + encodeURIComponent(name);
+        });
+    }
+
+    /* ============================================================
+       Edit page: category combobox
+       ============================================================ */
+
+    function setupCategoryCombobox() {
+        const wrap = document.querySelector("[data-category-combobox]");
+        if (!wrap) return;
+
+        const input = wrap.querySelector(".category-combobox__input");
+        const toggle = wrap.querySelector(".category-combobox__toggle");
+        const menu = wrap.querySelector(".category-combobox__menu");
+        const options = Array.from(
+            wrap.querySelectorAll(".category-combobox__option"),
+        );
+        const emptyEl = wrap.querySelector(".category-combobox__empty");
+        if (!input || !toggle || !menu) return;
+
+        let activeIndex = -1;
+
+        function setExpanded(open) {
+            input.setAttribute("aria-expanded", open ? "true" : "false");
+        }
+
+        function markSelected() {
+            const current = input.value.trim();
+            options.forEach(function (opt) {
+                const val = opt.getAttribute("data-value") || "";
+                opt.classList.toggle("is-selected", val === current);
+            });
+        }
+
+        function applyFilter() {
+            const q = input.value.trim().toLowerCase();
+            let visibleCount = 0;
+
+            options.forEach(function (opt) {
+                const value = opt.getAttribute("data-value") || "";
+                const label = (
+                    opt.querySelector(".category-combobox__option-label")
+                        ?.textContent || ""
+                ).toLowerCase();
+                const meta = (
+                    opt.querySelector(".category-combobox__option-meta")
+                        ?.textContent || ""
+                ).toLowerCase();
+
+                let show;
+                if (value === "") {
+                    show =
+                        !q ||
+                        label.includes(q) ||
+                        meta.includes(q) ||
+                        "none".includes(q);
+                } else {
+                    show =
+                        !q ||
+                        value.toLowerCase().includes(q) ||
+                        label.includes(q);
+                }
+
+                opt.hidden = !show;
+                opt.classList.remove("is-active");
+                if (show) visibleCount++;
+            });
+
+            activeIndex = -1;
+            if (emptyEl) {
+                emptyEl.hidden = visibleCount > 0;
+            }
+            markSelected();
+        }
+
+        function openMenu() {
+            wrap.classList.add("is-open");
+            menu.hidden = false;
+            setExpanded(true);
+            applyFilter();
+        }
+
+        function closeMenu() {
+            wrap.classList.remove("is-open");
+            menu.hidden = true;
+            setExpanded(false);
+            activeIndex = -1;
+            options.forEach(function (opt) {
+                opt.classList.remove("is-active");
+            });
+        }
+
+        function chooseOption(opt) {
+            input.value = opt.getAttribute("data-value") || "";
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            closeMenu();
+            input.focus();
+        }
+
+        function visibleOptions() {
+            return options.filter(function (opt) {
+                return !opt.hidden;
+            });
+        }
+
+        function moveActive(delta) {
+            const visible = visibleOptions();
+            if (!visible.length) return;
+            activeIndex =
+                (activeIndex + delta + visible.length) % visible.length;
+            options.forEach(function (opt) {
+                opt.classList.remove("is-active");
+            });
+            visible[activeIndex].classList.add("is-active");
+            visible[activeIndex].scrollIntoView({ block: "nearest" });
+        }
+
+        toggle.addEventListener("click", function () {
+            if (wrap.classList.contains("is-open")) closeMenu();
+            else openMenu();
+        });
+
+        input.addEventListener("focus", function () {
+            openMenu();
+        });
+
+        input.addEventListener("input", function () {
+            if (!wrap.classList.contains("is-open")) openMenu();
+            else applyFilter();
+        });
+
+        input.addEventListener("keydown", function (evt) {
+            if (evt.key === "Escape") {
+                closeMenu();
+                return;
+            }
+            if (evt.key === "ArrowDown") {
+                evt.preventDefault();
+                if (!wrap.classList.contains("is-open")) openMenu();
+                moveActive(1);
+                return;
+            }
+            if (evt.key === "ArrowUp") {
+                evt.preventDefault();
+                if (!wrap.classList.contains("is-open")) openMenu();
+                moveActive(-1);
+                return;
+            }
+            if (evt.key === "Enter") {
+                evt.preventDefault();
+                const visible = visibleOptions();
+                if (
+                    wrap.classList.contains("is-open") &&
+                    activeIndex >= 0 &&
+                    visible[activeIndex]
+                ) {
+                    chooseOption(visible[activeIndex]);
+                } else {
+                    closeMenu();
+                }
+            }
+        });
+
+        options.forEach(function (opt) {
+            opt.addEventListener("mousedown", function (evt) {
+                evt.preventDefault();
+            });
+            opt.addEventListener("click", function () {
+                chooseOption(opt);
             });
         });
+
+        document.addEventListener("mousedown", function (evt) {
+            if (!wrap.contains(evt.target)) closeMenu();
+        });
+
+        markSelected();
     }
 
     /* ============================================================
@@ -293,6 +603,23 @@
         function markDirty() {
             dirty = true;
         }
+
+        function isFlagFormSubmission(elt) {
+            if (!elt) return false;
+            if (elt === form) return true;
+            if (form.contains(elt)) return true;
+            return elt.getAttribute && elt.getAttribute("form") === form.id;
+        }
+
+        function clearDirtyOnSuccessfulSave(evt) {
+            const xhr = evt.detail && evt.detail.xhr;
+            const elt = evt.detail && evt.detail.elt;
+            if (!xhr || !isFlagFormSubmission(elt)) return;
+            if (xhr.status >= 200 && xhr.status < 400) {
+                dirty = false;
+            }
+        }
+
         // Ignore events from regions opted out via data-no-dirty (e.g. the
         // inline flag tester, which lives inside the form for layout reasons
         // but isn't part of the flag being saved).
@@ -303,6 +630,18 @@
         form.addEventListener("input", maybeMarkDirty);
         form.addEventListener("change", maybeMarkDirty);
 
+        // Enter in a single-line field would otherwise submit the form via the
+        // first toolbar button ("Save & return to list"), save successfully, and
+        // still trip beforeunload because navigation starts before dirty clears.
+        form.addEventListener("keydown", function (evt) {
+            if (evt.key !== "Enter" || evt.defaultPrevented) return;
+            if (evt.target.closest("[data-no-dirty]")) return;
+            if (evt.target.closest("[data-category-combobox]")) return;
+            if (evt.target.tagName === "TEXTAREA") return;
+            if (evt.target.type === "submit") return;
+            evt.preventDefault();
+        });
+
         window.addEventListener("beforeunload", function (e) {
             if (!dirty) return;
             e.preventDefault();
@@ -310,16 +649,16 @@
             return "";
         });
 
-        // Reset on successful htmx save.
-        document.body.addEventListener("htmx:afterRequest", function (evt) {
-            const xhr = evt.detail && evt.detail.xhr;
-            const elt = evt.detail && evt.detail.elt;
-            if (!xhr || !elt) return;
-            if (elt !== form && !form.contains(elt)) return;
-            if (xhr.status >= 200 && xhr.status < 400) {
-                dirty = false;
-            }
-        });
+        // Clear dirty before htmx follows HX-Redirect so beforeunload does not fire
+        // after a successful save.
+        document.body.addEventListener(
+            "htmx:beforeOnLoad",
+            clearDirtyOnSuccessfulSave,
+        );
+        document.body.addEventListener(
+            "htmx:afterRequest",
+            clearDirtyOnSuccessfulSave,
+        );
 
         // Internal hook: rule-builder can flag dirty too.
         form.__markDirty = markDirty;
@@ -453,25 +792,54 @@
         });
 
         const builder = document.getElementById("rule-builder");
+        const refreshDraftTesterContext = debounce(function () {
+            if (getTesterSource() === "draft") {
+                refreshTesterContextUI();
+            }
+        }, 200);
         if (builder) {
-            builder.addEventListener(
-                "input",
-                debounce(function () {
-                    if (getTesterSource() === "draft") {
-                        refreshTesterContextUI();
-                    }
-                }, 200),
-            );
+            builder.addEventListener("input", refreshDraftTesterContext);
+            builder.addEventListener("rules-changed", function () {
+                if (getTesterSource() === "draft") {
+                    refreshTesterContextUI();
+                }
+            });
         }
 
         refreshTesterContextUI();
 
         document.body.addEventListener("htmx:configRequest", function (evt) {
             const elt = evt.detail && evt.detail.elt;
-            if (!elt || !elt.classList.contains("tester-run")) return;
-            if (typeof window.syncEditorRulesForTest === "function") {
-                window.syncEditorRulesForTest();
+            if (!elt) return;
+            const form = document.getElementById("flag-form");
+            const syncRules =
+                typeof window.syncEditorRulesForTest === "function"
+                    ? window.syncEditorRulesForTest
+                    : null;
+            if (elt.classList && elt.classList.contains("tester-run")) {
+                if (syncRules) syncRules();
+                return;
             }
+            if (!form || !syncRules) return;
+            const isSave =
+                elt === form ||
+                form.contains(elt) ||
+                (elt.getAttribute && elt.getAttribute("form") === form.id);
+            if (isSave) syncRules();
+        });
+
+        document.body.addEventListener("htmx:afterRequest", function (evt) {
+            const xhr = evt.detail && evt.detail.xhr;
+            const elt = evt.detail && evt.detail.elt;
+            const form = document.getElementById("flag-form");
+            if (!xhr || !form || xhr.status < 200 || xhr.status >= 400) return;
+            const isSave =
+                elt === form ||
+                form.contains(elt) ||
+                (elt.getAttribute && elt.getAttribute("form") === form.id);
+            if (!isSave) return;
+            syncSavedContextKeyFields(card);
+            refreshTesterContextUI();
         });
 
         // Enter inside a value field is a power-user shortcut for "Run test".
@@ -562,7 +930,7 @@
         const checked = document.querySelector(
             ".tester-card [data-tester-source]:checked",
         );
-        return checked ? checked.value : "saved";
+        return checked ? checked.value : "draft";
     }
     window.getTesterSource = getTesterSource;
 
@@ -703,6 +1071,34 @@
         } catch (e) {
             return [];
         }
+    }
+
+    function contextKeyFieldsToJSON(fields) {
+        return JSON.stringify(
+            fields.map(function (field) {
+                return {
+                    Key: field.key,
+                    Rules: (field.rules || []).map(function (ref) {
+                        return {
+                            TopLevelIndex: ref.topLevelIndex,
+                            Label: ref.label,
+                        };
+                    }),
+                };
+            }),
+        );
+    }
+
+    function syncSavedContextKeyFields(card) {
+        if (typeof window.syncEditorRulesForTest === "function") {
+            window.syncEditorRulesForTest();
+        }
+        const fields = parseDraftContextKeyFields();
+        card.setAttribute(
+            "data-saved-context-fields",
+            contextKeyFieldsToJSON(fields),
+        );
+        return fields;
     }
 
     /* ============================================================
@@ -929,6 +1325,9 @@
             sync();
             markDirty();
             scheduleTocRefresh();
+            container.dispatchEvent(
+                new CustomEvent("rules-changed", { bubbles: true }),
+            );
         }
 
         // ----- Field factories -----
@@ -959,27 +1358,45 @@
             input.className = "input";
             input.type = "text";
             input.value = obj[key] != null ? obj[key] : "";
+            if (opts.placeholder) input.placeholder = opts.placeholder;
             input.addEventListener("input", function () {
                 obj[key] = input.value;
                 notifyChange();
                 if (key === "VariantID" && opts.onVariantChange)
                     opts.onVariantChange();
             });
-            return field(label, input);
+            const wrap = field(label, input);
+            if (opts.hint) {
+                const hint = document.createElement("span");
+                hint.className = "field__hint";
+                hint.textContent = opts.hint;
+                wrap.appendChild(hint);
+            }
+            return wrap;
         }
 
-        function numberField(label, obj, key) {
+        function numberField(label, obj, key, opts) {
+            opts = opts || {};
             const input = document.createElement("input");
             input.className = "input";
             input.type = "number";
-            input.step = "any";
+            input.step = opts.step != null ? opts.step : "any";
+            if (opts.min != null) input.min = String(opts.min);
+            if (opts.max != null) input.max = String(opts.max);
             input.value = obj[key] != null ? obj[key] : 0;
             input.addEventListener("input", function () {
                 const v = parseFloat(input.value);
                 obj[key] = isNaN(v) ? 0 : v;
                 notifyChange();
             });
-            return field(label, input);
+            const wrap = field(label, input);
+            if (opts.hint) {
+                const hint = document.createElement("span");
+                hint.className = "field__hint";
+                hint.textContent = opts.hint;
+                wrap.appendChild(hint);
+            }
+            return wrap;
         }
 
         function checkboxField(label, obj, key) {
@@ -1002,17 +1419,86 @@
             return wrap;
         }
 
+        function rfc3339ToDateTimeParts(value) {
+            if (value == null || value === "") {
+                return { date: "", time: "" };
+            }
+            const d = new Date(String(value));
+            if (isNaN(d.getTime())) {
+                return { date: "", time: "" };
+            }
+            const iso = d.toISOString();
+            const time = iso.slice(11, 19);
+            return {
+                date: iso.slice(0, 10),
+                time: time === "00:00:00" ? "" : time.slice(0, 5),
+            };
+        }
+
+        function dateTimePartsToRFC3339(date, time) {
+            if (!date) return "";
+            let t = (time || "").trim();
+            if (t.length === 5) t += ":00";
+            if (!t) t = "00:00:00";
+            const d = new Date(date + "T" + t + "Z");
+            if (isNaN(d.getTime())) return "";
+            return d.toISOString().replace(/\.\d{3}Z$/, "Z");
+        }
+
         function dateTimeField(label, obj, key) {
-            const input = document.createElement("input");
-            input.className = "input input--mono";
-            input.type = "text";
-            input.placeholder = "YYYY-MM-DDTHH:MM:SSZ";
-            input.value = obj[key] != null ? obj[key] : "";
-            input.addEventListener("input", function () {
-                obj[key] = input.value;
+            const wrap = document.createElement("div");
+            wrap.className = "field datetime-field";
+
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = label;
+
+            const pickers = document.createElement("div");
+            pickers.className = "datetime-field__pickers";
+
+            const dateInput = document.createElement("input");
+            dateInput.className = "input datetime-field__date";
+            dateInput.type = "date";
+
+            const timeInput = document.createElement("input");
+            timeInput.className = "input datetime-field__time";
+            timeInput.type = "time";
+            timeInput.step = "60";
+
+            const hint = document.createElement("span");
+            hint.className = "field__hint";
+            hint.textContent =
+                "UTC. Time is optional and defaults to midnight.";
+
+            function syncFromObj() {
+                const parts = rfc3339ToDateTimeParts(obj[key]);
+                dateInput.value = parts.date;
+                timeInput.value = parts.time;
+            }
+
+            function syncToObj() {
+                const rfc = dateTimePartsToRFC3339(
+                    dateInput.value,
+                    timeInput.value,
+                );
+                if (!rfc) {
+                    delete obj[key];
+                } else {
+                    obj[key] = rfc;
+                }
                 notifyChange();
-            });
-            return field(label, input);
+            }
+
+            dateInput.addEventListener("change", syncToObj);
+            timeInput.addEventListener("change", syncToObj);
+
+            pickers.appendChild(dateInput);
+            pickers.appendChild(timeInput);
+            wrap.appendChild(lbl);
+            wrap.appendChild(pickers);
+            wrap.appendChild(hint);
+            syncFromObj();
+            return wrap;
         }
 
         function jsonField(label, obj, key) {
@@ -1082,6 +1568,783 @@
 
             wrap.appendChild(ta);
             wrap.appendChild(err);
+            return wrap;
+        }
+
+        function parseListItemValue(raw) {
+            const t = raw.trim();
+            if (t === "") return null;
+            if (t === "true") return true;
+            if (t === "false") return false;
+            if (t === "null") return null;
+            try {
+                return JSON.parse(t);
+            } catch (e) {
+                /* fall through */
+            }
+            const n = Number(t);
+            if (!isNaN(n) && String(n) === t) return n;
+            return t;
+        }
+
+        function valueToListItemString(v) {
+            if (v === null || v === undefined) return "";
+            if (typeof v === "string") return v;
+            return JSON.stringify(v);
+        }
+
+        function listField(label, obj, key, opts) {
+            opts = opts || {};
+            const parseItem = !!opts.parseItem;
+            const wrap = document.createElement("div");
+            wrap.className = "field list-field";
+
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = label;
+            wrap.appendChild(lbl);
+
+            const list = document.createElement("div");
+            list.className = "list-field__items";
+            wrap.appendChild(list);
+
+            if (!Array.isArray(obj[key])) obj[key] = [];
+
+            function commitRow(index, raw) {
+                const trimmed = raw.trim();
+                if (trimmed === "") {
+                    obj[key].splice(index, 1);
+                    render();
+                } else {
+                    obj[key][index] = parseItem
+                        ? parseListItemValue(raw)
+                        : trimmed;
+                }
+                notifyChange();
+            }
+
+            function render() {
+                list.innerHTML = "";
+                obj[key].forEach(function (item, index) {
+                    const row = document.createElement("div");
+                    row.className = "list-field__row";
+
+                    const input = document.createElement("input");
+                    input.className = "input input--mono list-field__input";
+                    input.type = "text";
+                    input.placeholder = opts.placeholder || "Value";
+                    input.value = valueToListItemString(item);
+                    input.addEventListener("change", function () {
+                        commitRow(index, input.value);
+                    });
+                    input.addEventListener("keydown", function (evt) {
+                        if (evt.key === "Enter") {
+                            evt.preventDefault();
+                            commitRow(index, input.value);
+                        }
+                    });
+
+                    const removeBtn = document.createElement("button");
+                    removeBtn.type = "button";
+                    removeBtn.className =
+                        "btn btn--ghost btn--sm btn--icon list-field__remove";
+                    removeBtn.setAttribute("aria-label", "Remove item");
+                    removeBtn.innerHTML =
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+                    removeBtn.addEventListener("click", function () {
+                        obj[key].splice(index, 1);
+                        render();
+                        notifyChange();
+                    });
+
+                    row.appendChild(input);
+                    row.appendChild(removeBtn);
+                    list.appendChild(row);
+                });
+
+                const addBtn = document.createElement("button");
+                addBtn.type = "button";
+                addBtn.className = "btn btn--ghost btn--sm list-field__add";
+                addBtn.textContent = opts.addLabel || "Add item";
+                addBtn.addEventListener("click", function () {
+                    obj[key].push(parseItem ? "" : "");
+                    render();
+                    notifyChange();
+                    const lastInput = list.querySelector(
+                        ".list-field__row:last-child .list-field__input",
+                    );
+                    if (lastInput) lastInput.focus();
+                });
+                list.appendChild(addBtn);
+            }
+
+            render();
+            if (opts.hint) {
+                const hint = document.createElement("span");
+                hint.className = "field__hint";
+                hint.textContent = opts.hint;
+                wrap.appendChild(hint);
+            }
+            return wrap;
+        }
+
+        function percentageField(label, obj, key) {
+            const wrap = document.createElement("div");
+            wrap.className = "field percentage-field";
+
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = label;
+
+            const control = document.createElement("div");
+            control.className = "percentage-field__control";
+
+            const slider = document.createElement("input");
+            slider.className = "percentage-field__slider";
+            slider.type = "range";
+            slider.min = "0";
+            slider.max = "100";
+            slider.step = "1";
+
+            const number = document.createElement("input");
+            number.className = "input percentage-field__number";
+            number.type = "number";
+            number.min = "0";
+            number.max = "100";
+            number.step = "1";
+
+            const pct = obj[key] != null ? Number(obj[key]) : 0;
+            slider.value = String(pct);
+            number.value = String(pct);
+
+            function sync(v) {
+                let n = Math.max(0, Math.min(100, Number(v) || 0));
+                slider.value = String(n);
+                number.value = String(n);
+                obj[key] = n;
+                notifyChange();
+            }
+
+            slider.addEventListener("input", function () {
+                sync(slider.value);
+            });
+            number.addEventListener("input", function () {
+                sync(number.value);
+            });
+
+            control.appendChild(slider);
+            control.appendChild(number);
+            wrap.appendChild(lbl);
+            wrap.appendChild(control);
+            const hint = document.createElement("span");
+            hint.className = "field__hint";
+            hint.textContent =
+                "Percentage of context values that should match.";
+            wrap.appendChild(hint);
+            return wrap;
+        }
+
+        function nsToHoursMinutes(ns) {
+            const totalMinutes = Math.floor(Number(ns || 0) / 1e9 / 60);
+            return {
+                hours: Math.floor(totalMinutes / 60),
+                minutes: totalMinutes % 60,
+            };
+        }
+
+        function hoursMinutesToNs(hours, minutes) {
+            return Math.round((hours * 3600 + minutes * 60) * 1e9);
+        }
+
+        function durationField(label, obj, key) {
+            const wrap = document.createElement("div");
+            wrap.className = "field duration-field";
+
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = label;
+
+            const parts = nsToHoursMinutes(obj[key]);
+            const pickers = document.createElement("div");
+            pickers.className = "duration-field__pickers";
+
+            function makePart(partLabel, value) {
+                const part = document.createElement("div");
+                part.className = "duration-field__part";
+                const partLbl = document.createElement("span");
+                partLbl.className = "duration-field__part-label";
+                partLbl.textContent = partLabel;
+                const input = document.createElement("input");
+                input.className = "input";
+                input.type = "number";
+                input.min = "0";
+                input.step = "1";
+                input.value = String(value);
+                part.appendChild(partLbl);
+                part.appendChild(input);
+                return { part: part, input: input };
+            }
+
+            const hoursPart = makePart("Hours", parts.hours);
+            const minutesPart = makePart("Minutes", parts.minutes);
+            pickers.appendChild(hoursPart.part);
+            pickers.appendChild(minutesPart.part);
+
+            function syncToObj() {
+                obj[key] = hoursMinutesToNs(
+                    parseInt(hoursPart.input.value, 10) || 0,
+                    parseInt(minutesPart.input.value, 10) || 0,
+                );
+                notifyChange();
+            }
+
+            hoursPart.input.addEventListener("input", syncToObj);
+            minutesPart.input.addEventListener("input", syncToObj);
+
+            wrap.appendChild(lbl);
+            wrap.appendChild(pickers);
+            const hint = document.createElement("span");
+            hint.className = "field__hint";
+            hint.textContent =
+                "How long the cron window stays active after each trigger.";
+            wrap.appendChild(hint);
+            return wrap;
+        }
+
+        const CRON_PRESETS = [
+            { label: "Every hour", value: "0 * * * *" },
+            { label: "Weekdays 9:00", value: "0 9 * * MON-FRI" },
+            { label: "Daily midnight", value: "0 0 * * *" },
+            { label: "Every 15 min", value: "*/15 * * * *" },
+        ];
+
+        function cronSpecField(obj, key) {
+            const wrap = document.createElement("div");
+            wrap.className = "field cron-field";
+
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = "Schedule";
+
+            const presets = document.createElement("div");
+            presets.className = "cron-field__presets";
+
+            const input = document.createElement("input");
+            input.className = "input input--mono";
+            input.type = "text";
+            input.placeholder = "0 9 * * MON-FRI";
+            input.value = obj[key] != null ? obj[key] : "";
+
+            function setSpec(value) {
+                input.value = value;
+                obj[key] = value;
+                presets
+                    .querySelectorAll(".cron-field__preset")
+                    .forEach(function (btn) {
+                        btn.classList.toggle(
+                            "is-active",
+                            btn.getAttribute("data-value") === value,
+                        );
+                    });
+                notifyChange();
+            }
+
+            CRON_PRESETS.forEach(function (preset) {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "cron-field__preset";
+                btn.setAttribute("data-value", preset.value);
+                btn.textContent = preset.label;
+                if (obj[key] === preset.value) btn.classList.add("is-active");
+                btn.addEventListener("click", function () {
+                    setSpec(preset.value);
+                });
+                presets.appendChild(btn);
+            });
+
+            input.addEventListener("input", function () {
+                obj[key] = input.value;
+                presets
+                    .querySelectorAll(".cron-field__preset")
+                    .forEach(function (btn) {
+                        btn.classList.remove("is-active");
+                    });
+                notifyChange();
+            });
+
+            wrap.appendChild(lbl);
+            wrap.appendChild(presets);
+            wrap.appendChild(input);
+            const hint = document.createElement("span");
+            hint.className = "field__hint";
+            hint.textContent =
+                "Standard cron syntax (minute hour day month weekday).";
+            wrap.appendChild(hint);
+            return wrap;
+        }
+
+        function appendGeoFenceFields(body, rule) {
+            body.appendChild(
+                textField("Latitude key", rule, "LatKey", {
+                    hint: "Context key for latitude.",
+                }),
+            );
+            body.appendChild(
+                textField("Longitude key", rule, "LngKey", {
+                    hint: "Context key for longitude.",
+                }),
+            );
+
+            const centerWrap = document.createElement("div");
+            centerWrap.className = "field geo-field";
+            const centerLbl = document.createElement("label");
+            centerLbl.className = "field__label";
+            centerLbl.textContent = "Center";
+            const coords = document.createElement("div");
+            coords.className = "geo-field__coords";
+
+            const latInput = document.createElement("input");
+            latInput.className = "input";
+            latInput.type = "number";
+            latInput.step = "any";
+            latInput.placeholder = "Latitude";
+            latInput.value = rule.LatCenter != null ? rule.LatCenter : "";
+
+            const lngInput = document.createElement("input");
+            lngInput.className = "input";
+            lngInput.type = "number";
+            lngInput.step = "any";
+            lngInput.placeholder = "Longitude";
+            lngInput.value = rule.LngCenter != null ? rule.LngCenter : "";
+
+            function syncCenter() {
+                rule.LatCenter = parseFloat(latInput.value) || 0;
+                rule.LngCenter = parseFloat(lngInput.value) || 0;
+                notifyChange();
+            }
+            latInput.addEventListener("input", syncCenter);
+            lngInput.addEventListener("input", syncCenter);
+            coords.appendChild(latInput);
+            coords.appendChild(lngInput);
+            centerWrap.appendChild(centerLbl);
+            centerWrap.appendChild(coords);
+            body.appendChild(centerWrap);
+
+            const radiusWrap = document.createElement("div");
+            radiusWrap.className = "field geo-field";
+            const radiusLbl = document.createElement("label");
+            radiusLbl.className = "field__label";
+            radiusLbl.textContent = "Radius";
+            const radiusRow = document.createElement("div");
+            radiusRow.className = "geo-field__radius";
+
+            const radiusInput = document.createElement("input");
+            radiusInput.className = "input";
+            radiusInput.type = "number";
+            radiusInput.min = "0";
+            radiusInput.step = "any";
+
+            const unitSelect = document.createElement("select");
+            unitSelect.className = "select";
+            const units = [
+                { label: "Meters", mult: 1 },
+                { label: "Kilometers", mult: 1000 },
+                { label: "Miles", mult: 1609.344 },
+            ];
+            units.forEach(function (unit) {
+                const opt = document.createElement("option");
+                opt.value = String(unit.mult);
+                opt.textContent = unit.label;
+                unitSelect.appendChild(opt);
+            });
+
+            const meters = rule.RadiusMeters != null ? rule.RadiusMeters : 0;
+            let bestUnit = units[0];
+            units.forEach(function (unit) {
+                if (meters >= unit.mult) bestUnit = unit;
+            });
+            unitSelect.value = String(bestUnit.mult);
+            radiusInput.value = String(
+                Math.round((meters / bestUnit.mult) * 1000) / 1000,
+            );
+
+            function syncRadius() {
+                const mult = parseFloat(unitSelect.value) || 1;
+                rule.RadiusMeters = (parseFloat(radiusInput.value) || 0) * mult;
+                notifyChange();
+            }
+            radiusInput.addEventListener("input", syncRadius);
+            unitSelect.addEventListener("change", syncRadius);
+            radiusRow.appendChild(radiusInput);
+            radiusRow.appendChild(unitSelect);
+            radiusWrap.appendChild(radiusLbl);
+            radiusWrap.appendChild(radiusRow);
+            body.appendChild(radiusWrap);
+        }
+
+        function rangeField(rule) {
+            const wrap = document.createElement("div");
+            wrap.className = "field range-field";
+
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = "Bounds";
+
+            const bounds = document.createElement("div");
+            bounds.className = "range-field__bounds";
+
+            function boundBlock(title, key, exclusiveKey) {
+                const block = document.createElement("div");
+                block.className = "range-field__bound";
+                const head = document.createElement("div");
+                head.className = "range-field__bound-head";
+                head.textContent = title;
+                const input = document.createElement("input");
+                input.className = "input";
+                input.type = "number";
+                input.step = "any";
+                input.value = rule[key] != null ? rule[key] : 0;
+                input.addEventListener("input", function () {
+                    rule[key] = parseFloat(input.value) || 0;
+                    notifyChange();
+                });
+                const exLbl = document.createElement("label");
+                exLbl.className = "checkbox";
+                const exInput = document.createElement("input");
+                exInput.type = "checkbox";
+                exInput.checked = !!rule[exclusiveKey];
+                exInput.addEventListener("change", function () {
+                    rule[exclusiveKey] = exInput.checked;
+                    notifyChange();
+                });
+                const exSpan = document.createElement("span");
+                exSpan.textContent = "Exclude boundary";
+                exLbl.appendChild(exInput);
+                exLbl.appendChild(exSpan);
+                block.appendChild(head);
+                block.appendChild(input);
+                block.appendChild(exLbl);
+                return block;
+            }
+
+            bounds.appendChild(boundBlock("From", "Min", "ExclusiveMin"));
+            bounds.appendChild(boundBlock("To", "Max", "ExclusiveMax"));
+            wrap.appendChild(lbl);
+            wrap.appendChild(bounds);
+            return wrap;
+        }
+
+        const SEMVER_PRESETS = [
+            ">= 1.0.0",
+            ">= 2.0.0, < 3.0.0",
+            "~1.2.0",
+            "^1.0.0",
+        ];
+
+        function semVerConstraintField(rule) {
+            const wrap = document.createElement("div");
+            wrap.className = "field semver-field";
+
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = "Constraint";
+
+            const presets = document.createElement("div");
+            presets.className = "semver-field__presets";
+
+            const input = document.createElement("input");
+            input.className = "input input--mono";
+            input.type = "text";
+            input.placeholder = ">= 1.2.0, < 2.0.0";
+            input.value = rule.Constraint != null ? rule.Constraint : "";
+
+            SEMVER_PRESETS.forEach(function (preset) {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "cron-field__preset";
+                btn.textContent = preset;
+                btn.addEventListener("click", function () {
+                    input.value = preset;
+                    rule.Constraint = preset;
+                    notifyChange();
+                });
+                presets.appendChild(btn);
+            });
+
+            input.addEventListener("input", function () {
+                rule.Constraint = input.value;
+                notifyChange();
+            });
+
+            wrap.appendChild(lbl);
+            wrap.appendChild(presets);
+            wrap.appendChild(input);
+            const hint = document.createElement("span");
+            hint.className = "field__hint";
+            hint.textContent =
+                "Semver range compared against the context value.";
+            wrap.appendChild(hint);
+            return wrap;
+        }
+
+        function regexPatternField(rule) {
+            const wrap = document.createElement("div");
+            wrap.className = "field regex-field";
+
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = "Pattern";
+
+            const patternInput = document.createElement("input");
+            patternInput.className = "input input--mono";
+            patternInput.type = "text";
+            patternInput.placeholder = "^prod-";
+            patternInput.value =
+                rule.RegexpPattern != null ? rule.RegexpPattern : "";
+
+            const testWrap = document.createElement("div");
+            testWrap.className = "regex-field__test";
+            const sampleInput = document.createElement("input");
+            sampleInput.className = "input input--mono";
+            sampleInput.type = "text";
+            sampleInput.placeholder = "Sample value to test";
+
+            const status = document.createElement("span");
+            status.className =
+                "regex-field__status regex-field__status--nomatch";
+            status.textContent = "No sample";
+
+            function updateStatus() {
+                rule.RegexpPattern = patternInput.value;
+                notifyChange();
+                const sample = sampleInput.value;
+                if (!sample) {
+                    status.textContent = "No sample";
+                    status.className =
+                        "regex-field__status regex-field__status--nomatch";
+                    return;
+                }
+                if (!patternInput.value) {
+                    status.textContent = "No pattern";
+                    status.className =
+                        "regex-field__status regex-field__status--nomatch";
+                    return;
+                }
+                try {
+                    const re = new RegExp(patternInput.value);
+                    const matched = re.test(sample);
+                    status.textContent = matched ? "Matches" : "No match";
+                    status.className = matched
+                        ? "regex-field__status regex-field__status--match"
+                        : "regex-field__status regex-field__status--nomatch";
+                } catch (e) {
+                    status.textContent = "Invalid regex";
+                    status.className =
+                        "regex-field__status regex-field__status--invalid";
+                }
+            }
+
+            patternInput.addEventListener("input", updateStatus);
+            sampleInput.addEventListener("input", updateStatus);
+            testWrap.appendChild(sampleInput);
+            testWrap.appendChild(status);
+
+            wrap.appendChild(lbl);
+            wrap.appendChild(patternInput);
+            wrap.appendChild(testWrap);
+            const hint = document.createElement("span");
+            hint.className = "field__hint";
+            hint.textContent =
+                "Try a sample value to confirm the pattern before saving.";
+            wrap.appendChild(hint);
+            return wrap;
+        }
+
+        function isSimpleValueData(v) {
+            return (
+                v === undefined ||
+                v === null ||
+                typeof v === "string" ||
+                typeof v === "number" ||
+                typeof v === "boolean"
+            );
+        }
+
+        function valueDataField(label, obj, key) {
+            const wrap = document.createElement("div");
+            wrap.className = "field value-data-field";
+
+            const labelRow = document.createElement("div");
+            labelRow.className = "field__label-row";
+            const lbl = document.createElement("label");
+            lbl.className = "field__label";
+            lbl.textContent = label;
+
+            const groupName =
+                "value-data-mode-" + Math.random().toString(36).slice(2);
+            const modes = document.createElement("div");
+            modes.className = "tester-source";
+            modes.setAttribute("role", "radiogroup");
+            modes.setAttribute("aria-label", "ValueData editor mode");
+
+            function makeModeOption(value, text, checked) {
+                const option = document.createElement("label");
+                option.className = "tester-source__option";
+                const input = document.createElement("input");
+                input.type = "radio";
+                input.name = groupName;
+                input.value = value;
+                input.checked = checked;
+                const span = document.createElement("span");
+                span.textContent = text;
+                option.appendChild(input);
+                option.appendChild(span);
+                return { option: option, input: input };
+            }
+
+            let mode = isSimpleValueData(obj[key]) ? "simple" : "json";
+            const simpleMode = makeModeOption(
+                "simple",
+                "Simple",
+                mode === "simple",
+            );
+            const jsonMode = makeModeOption("json", "JSON", mode === "json");
+            modes.appendChild(simpleMode.option);
+            modes.appendChild(jsonMode.option);
+            labelRow.appendChild(lbl);
+            labelRow.appendChild(modes);
+            wrap.appendChild(labelRow);
+
+            const simpleWrap = document.createElement("div");
+            simpleWrap.className = "value-data-field__simple";
+            const simpleInput = document.createElement("input");
+            simpleInput.className = "input input--mono";
+            simpleInput.type = "text";
+            simpleInput.placeholder = "e.g. on, true, 42";
+
+            const ta = document.createElement("textarea");
+            ta.className = "textarea textarea--mono";
+            ta.spellcheck = false;
+            ta.rows = 3;
+
+            const err = document.createElement("span");
+            err.className = "field__error";
+            err.textContent = "Invalid JSON.";
+
+            function setMode(next) {
+                mode = next;
+                simpleMode.input.checked = mode === "simple";
+                jsonMode.input.checked = mode === "json";
+                simpleWrap.hidden = mode !== "simple";
+                ta.hidden = mode !== "json";
+            }
+
+            function switchToSimple() {
+                if (mode === "simple") return;
+                if (!ta.hidden) {
+                    try {
+                        if (ta.value.trim() !== "") {
+                            obj[key] = JSON.parse(ta.value);
+                        }
+                    } catch (e) {
+                        jsonMode.input.checked = true;
+                        simpleMode.input.checked = false;
+                        return;
+                    }
+                }
+                loadFromObj();
+                setMode("simple");
+            }
+
+            function switchToJson() {
+                if (mode === "json") return;
+                syncSimple();
+                try {
+                    ta.value = JSON.stringify(obj[key], null, 2);
+                } catch (e) {
+                    ta.value = "";
+                }
+                setMode("json");
+            }
+
+            function loadFromObj() {
+                if (isSimpleValueData(obj[key])) {
+                    simpleInput.value =
+                        obj[key] === undefined || obj[key] === null
+                            ? ""
+                            : String(obj[key]);
+                    try {
+                        ta.value =
+                            obj[key] === undefined
+                                ? ""
+                                : JSON.stringify(obj[key], null, 2);
+                    } catch (e) {
+                        ta.value = "";
+                    }
+                    setMode("simple");
+                } else {
+                    try {
+                        ta.value = JSON.stringify(obj[key], null, 2);
+                    } catch (e) {
+                        ta.value = "";
+                    }
+                    setMode("json");
+                }
+            }
+
+            function syncSimple() {
+                const raw = simpleInput.value.trim();
+                if (raw === "") {
+                    delete obj[key];
+                } else if (raw === "true") {
+                    obj[key] = true;
+                } else if (raw === "false") {
+                    obj[key] = false;
+                } else if (raw === "null") {
+                    obj[key] = null;
+                } else {
+                    const n = Number(raw);
+                    if (!isNaN(n) && String(n) === raw) obj[key] = n;
+                    else obj[key] = raw;
+                }
+                wrap.classList.remove("is-invalid");
+                notifyChange();
+            }
+
+            function syncJson() {
+                if (ta.value.trim() === "") {
+                    delete obj[key];
+                    wrap.classList.remove("is-invalid");
+                    notifyChange();
+                    return;
+                }
+                try {
+                    obj[key] = JSON.parse(ta.value);
+                    wrap.classList.remove("is-invalid");
+                    notifyChange();
+                } catch (e) {
+                    wrap.classList.add("is-invalid");
+                }
+            }
+
+            modes.addEventListener("change", function (evt) {
+                if (evt.target.value === "simple") switchToSimple();
+                else if (evt.target.value === "json") switchToJson();
+            });
+
+            simpleInput.addEventListener("input", syncSimple);
+            ta.addEventListener("input", syncJson);
+
+            simpleWrap.appendChild(simpleInput);
+            wrap.appendChild(simpleWrap);
+            wrap.appendChild(ta);
+            wrap.appendChild(err);
+            const hint = document.createElement("span");
+            hint.className = "field__hint";
+            hint.textContent =
+                "Optional payload returned when this rule matches. Leave empty if unused.";
+            wrap.appendChild(hint);
+            loadFromObj();
             return wrap;
         }
 
@@ -1288,9 +2551,7 @@
                     break;
                 case "regexRule":
                     body.appendChild(textField("Key", rule, "Key"));
-                    body.appendChild(
-                        textField("RegexpPattern", rule, "RegexpPattern"),
-                    );
+                    body.appendChild(regexPatternField(rule));
                     break;
                 case "existsRule":
                     body.appendChild(textField("Key", rule, "Key"));
@@ -1298,24 +2559,21 @@
                 case "fractionalRule":
                     body.appendChild(textField("Key", rule, "Key"));
                     body.appendChild(
-                        numberField("Percentage", rule, "Percentage"),
+                        percentageField("Percentage", rule, "Percentage"),
                     );
                     break;
                 case "rangeRule":
                     body.appendChild(textField("Key", rule, "Key"));
-                    body.appendChild(numberField("Min", rule, "Min"));
-                    body.appendChild(numberField("Max", rule, "Max"));
-                    body.appendChild(
-                        checkboxField("ExclusiveMin", rule, "ExclusiveMin"),
-                    );
-                    body.appendChild(
-                        checkboxField("ExclusiveMax", rule, "ExclusiveMax"),
-                    );
+                    body.appendChild(rangeField(rule));
                     break;
                 case "inListRule":
                     body.appendChild(textField("Key", rule, "Key"));
                     body.appendChild(
-                        jsonField("Items (JSON array)", rule, "Items"),
+                        listField("Items", rule, "Items", {
+                            parseItem: true,
+                            placeholder: "Value (string, number, true, false)",
+                            hint: "Enter each allowed value. Numbers and booleans are parsed automatically.",
+                        }),
                     );
                     break;
                 case "prefixRule":
@@ -1333,42 +2591,34 @@
                 case "ipRangeRule":
                     body.appendChild(textField("Key", rule, "Key"));
                     body.appendChild(
-                        jsonField("CIDRs (JSON array)", rule, "CIDRs"),
+                        listField("CIDRs", rule, "CIDRs", {
+                            placeholder: "e.g. 10.0.0.0/8",
+                            addLabel: "Add CIDR",
+                            hint: "One CIDR block per row.",
+                        }),
                     );
                     break;
                 case "geoFenceRule":
-                    body.appendChild(textField("LatKey", rule, "LatKey"));
-                    body.appendChild(textField("LngKey", rule, "LngKey"));
-                    body.appendChild(
-                        numberField("LatCenter", rule, "LatCenter"),
-                    );
-                    body.appendChild(
-                        numberField("LngCenter", rule, "LngCenter"),
-                    );
-                    body.appendChild(
-                        numberField("RadiusMeters", rule, "RadiusMeters"),
-                    );
+                    appendGeoFenceFields(body, rule);
                     break;
                 case "dateTimeRule":
                     body.appendChild(textField("Key", rule, "Key"));
-                    body.appendChild(
-                        dateTimeField("After (RFC3339)", rule, "After"),
-                    );
-                    body.appendChild(
-                        dateTimeField("Before (RFC3339)", rule, "Before"),
-                    );
+                    body.appendChild(dateTimeField("After", rule, "After"));
+                    body.appendChild(dateTimeField("Before", rule, "Before"));
                     break;
                 case "semVerRule":
                     body.appendChild(textField("Key", rule, "Key"));
-                    body.appendChild(
-                        textField("Constraint", rule, "Constraint"),
-                    );
+                    body.appendChild(semVerConstraintField(rule));
                     break;
                 case "cronRule":
-                    body.appendChild(textField("Key", rule, "Key"));
-                    body.appendChild(textField("CronSpec", rule, "CronSpec"));
                     body.appendChild(
-                        numberField("Duration (nanoseconds)", rule, "Duration"),
+                        textField("Key", rule, "Key", {
+                            hint: "Context key used to evaluate the cron window.",
+                        }),
+                    );
+                    body.appendChild(cronSpecField(rule, "CronSpec"));
+                    body.appendChild(
+                        durationField("Duration", rule, "Duration"),
                     );
                     break;
                 case "andRule":
@@ -1449,7 +2699,7 @@
             // ValueData (always available on composites; otherwise hidden on nested children)
             if (!opts.hideValueData || COMPOSITE_TYPES.has(ruleTypeKey)) {
                 body.appendChild(
-                    jsonField("ValueData (JSON)", rule, "ValueData"),
+                    valueDataField("ValueData", rule, "ValueData"),
                 );
             }
 
@@ -1751,6 +3001,8 @@
         wireAllConfirmButtons(document);
         wireAllFlagRows(document);
         setupListSearch();
+        setupNewFlagDialog();
+        setupCategoryCombobox();
         setupJsonFieldBlocks();
         setupFormDirtyGuard();
         setupRuleBuilder();

@@ -10,6 +10,7 @@ type Definition struct {
 
 	DefaultValue   any
 	DefaultVariant string
+	Category       string `bson:"category,omitempty"` // UI-only grouping in the flag editor
 
 	Rules []rule.ConcreteRule `bson:"rules"`
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zackarysantana/mongo-openfeature-go/src/flag"
 	"github.com/zackarysantana/mongo-openfeature-go/src/rule"
 )
 
@@ -119,7 +120,8 @@ func TestEditPageRendersTesterForSavedFlag(t *testing.T) {
 	render := func(name string, fields []rule.ContextKeyField) string {
 		var buf bytes.Buffer
 		data := map[string]any{
-			"Flag":                 struct{ FlagName, DefaultVariant string }{name, ""},
+			"Flag":                 struct{ FlagName, DefaultVariant, Category string }{name, "", ""},
+			"Categories":           []string{"Billing", "Growth"},
 			"RulesJSON":            "[]",
 			"DefaultValueJSON":     `""`,
 			"ContextKeyFields":     fields,
@@ -168,11 +170,23 @@ func TestEditPageRendersTesterForSavedFlag(t *testing.T) {
 	if !strings.Contains(saved, `data-tester-source`) {
 		t.Errorf("expected saved/draft source toggle")
 	}
-	if !strings.Contains(saved, "Uses the version stored on the server") {
-		t.Errorf("expected saved source subtitle")
+	if !strings.Contains(saved, "Uses your unsaved changes from the editor") {
+		t.Errorf("expected draft source subtitle as default")
+	}
+	if !strings.Contains(saved, `value="draft"`) || !strings.Contains(saved, "checked") {
+		t.Errorf("expected draft source selected by default")
 	}
 	if !strings.Contains(saved, "Draft") {
 		t.Errorf("expected draft source option in toggle")
+	}
+	if !strings.Contains(saved, "Save &amp; return to list") {
+		t.Errorf("expected save and return button on edit page")
+	}
+	if !strings.Contains(saved, `data-category-combobox`) {
+		t.Errorf("expected category combobox on edit page")
+	}
+	if strings.Contains(saved, `id="flag-categories"`) {
+		t.Errorf("did not expect native category datalist")
 	}
 	if strings.Contains(saved, "data-tester-add") {
 		t.Errorf("did not expect add-field control")
@@ -190,6 +204,73 @@ func TestEditPageRendersTesterForSavedFlag(t *testing.T) {
 	noKeys := render("bare-flag", nil)
 	if !strings.Contains(noKeys, "No context keys in the saved rules") {
 		t.Errorf("expected empty-state copy when flag has no context keys")
+	}
+}
+
+// TestIndexPageNewFlagDialog verifies the home page opens a name dialog instead
+// of linking directly to a blank edit form.
+func TestIndexPageNewFlagDialog(t *testing.T) {
+	h := NewWebHandler(nil)
+
+	var buf bytes.Buffer
+	data := map[string]any{
+		"FlagSections":  nil,
+		"HasFlags":      false,
+		"FlagNamesJSON": `["existing-flag"]`,
+	}
+	if err := h.templates["index"].ExecuteTemplate(&buf, "layout", data); err != nil {
+		t.Fatalf("rendering index page: %v", err)
+	}
+	got := buf.String()
+	for _, fragment := range []string{
+		`id="new-flag-dialog"`,
+		`data-new-flag-open`,
+		`id="new-flag-name"`,
+		`data-flag-names=`,
+		`existing-flag`,
+	} {
+		if !strings.Contains(got, fragment) {
+			t.Errorf("expected index page to contain %q; got:\n%s", fragment, got)
+		}
+	}
+	if strings.Contains(got, `href="/edit/"`) {
+		t.Errorf("did not expect a direct link to blank edit page")
+	}
+}
+
+// TestIndexPageGroupsFlagsByCategory verifies the home page renders category
+// sections with uncategorized flags listed first.
+func TestIndexPageGroupsFlagsByCategory(t *testing.T) {
+	h := NewWebHandler(nil)
+
+	sections := BuildFlagListSections(map[string]flag.Definition{
+		"billing-flag": {Category: "Billing"},
+		"lonely-flag":  {},
+	})
+
+	var buf bytes.Buffer
+	data := map[string]any{
+		"FlagSections":  sections,
+		"HasFlags":      true,
+		"FlagNamesJSON": `[]`,
+	}
+	if err := h.templates["index"].ExecuteTemplate(&buf, "layout", data); err != nil {
+		t.Fatalf("rendering index page: %v", err)
+	}
+	got := buf.String()
+	if !strings.Contains(got, "Uncategorized") {
+		t.Errorf("expected uncategorized section heading")
+	}
+	if !strings.Contains(got, "Billing") {
+		t.Errorf("expected billing category section")
+	}
+	if !strings.Contains(got, "lonely-flag") {
+		t.Errorf("expected uncategorized flag row")
+	}
+	uncat := strings.Index(got, "Uncategorized")
+	billing := strings.Index(got, ">Billing<")
+	if uncat < 0 || billing < 0 || uncat > billing {
+		t.Errorf("expected uncategorized section before category sections")
 	}
 }
 

@@ -2,22 +2,22 @@
 
 This repository is a MongoDB provider for the [OpenFeature Go SDK](https://openfeature.dev/docs/reference/technologies/server/go/).
 
--   [Features](#features)
--   [Usage](#usage)
--   [Standard Rules](#standard-rules)
--   [Control Rules](#control-rules)
--   [Example](#example)
--   [Editor](#editor)
--   [MCP Server](#mcp-server)
--   [AI Usage](#ai-usage)
+- [Features](#features)
+- [Usage](#usage)
+- [Standard Rules](#standard-rules)
+- [Control Rules](#control-rules)
+- [Example](#example)
+- [Editor](#editor)
+- [MCP Server](#mcp-server)
+- [AI Usage](#ai-usage)
 
 ## Features
 
--   Go OpenFeature SDK compatible MongoDB provider.
--   Supports both single-document and multi-document flag storage.
--   Provides a custom MongoDB client for managing flags.
--   Allows for flexible flag definitions with various rules.
--   Automatically watches changes in the MongoDB collection and updates flags accordingly.
+- Go OpenFeature SDK compatible MongoDB provider.
+- Supports both single-document and multi-document flag storage.
+- Provides a custom MongoDB client for managing flags.
+- Allows for flexible flag definitions with various rules.
+- Automatically watches changes in the MongoDB collection and updates flags accordingly.
 
 ## Usage
 
@@ -115,20 +115,20 @@ Matches on the key 'user_id'. If it's matched, it will inform the OpenFeature SD
 
 The list of standard rules includes:
 
--   [ExactMatchRule](#exactmatchrule)
--   [RegexRule](#regexrule)
--   [ExistsRule](#existsrule)
--   [FractionalRule](#fractionalrule)
--   [RangeRule](#rangerule)
--   [InListRule](#inlistrule)
--   [PrefixRule](#prefixrule)
--   [SuffixRule](#suffixrule)
--   [ContainsRule](#containsrule)
--   [IPRangeRule](#iprangerule)
--   [GeoFenceRule](#geofencerule)
--   [DateTimeRule](#datetimerule)
--   [SemVerRule](#semverrule)
--   [CronRule](#cronrule)
+- [ExactMatchRule](#exactmatchrule)
+- [RegexRule](#regexrule)
+- [ExistsRule](#existsrule)
+- [FractionalRule](#fractionalrule)
+- [RangeRule](#rangerule)
+- [InListRule](#inlistrule)
+- [PrefixRule](#prefixrule)
+- [SuffixRule](#suffixrule)
+- [ContainsRule](#containsrule)
+- [IPRangeRule](#iprangerule)
+- [GeoFenceRule](#geofencerule)
+- [DateTimeRule](#datetimerule)
+- [SemVerRule](#semverrule)
+- [CronRule](#cronrule)
 
 There are also [control rules](#control-rules) that can be used to combine, negate, or override other rules:
 
@@ -328,10 +328,10 @@ Control rules are used to combine, negate, or override other rules. They can be 
 
 The control rules include:
 
--   [AndRule](#andrule)
--   [OrRule](#orrule)
--   [NotRule](#notrule)
--   [OverrideRule](#overriderule)
+- [AndRule](#andrule)
+- [OrRule](#orrule)
+- [NotRule](#notrule)
+- [OverrideRule](#overriderule)
 
 #### AndRule
 
@@ -427,19 +427,30 @@ USE_TESTCONTAINER=true go run cmd/editor/main.go
 or you can use the Docker image:
 
 ```bash
-docker run -p 8080:8080 -e MONGODB_ENDPOINT=<your_mongodb_endpoint> lidtop/mongo-openfeature-go-editor
+docker run -p 3000:3000 -e MONGODB_ENDPOINT=<your_mongodb_endpoint> lidtop/mongo-openfeature-go-editor
 ```
 
 If you're using WSL, you can use `host.docker.internal` in place of `localhost` for the MONGODB_ENDPOINT.
 
 The default values if no environment variables are set are:
 
--   `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
--   `MONGODB_DATABASE`: `feature_flags`
--   `MONGODB_COLLECTION`: `feature_flags`
--   `MONGODB_DOCUMENT_ID`: Nothing (uses multi-document mode). Specifying a document ID will use single-document mode
--   `EDITOR_PORT`: `8080` (This should only be a number, not a full address.)
--   `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
+- `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
+- `MONGODB_DATABASE`: `feature_flags`
+- `MONGODB_COLLECTION`: `feature_flags`
+- `MONGODB_DOCUMENT_ID`: Nothing (uses multi-document mode). Specifying a document ID will use single-document mode
+- `EDITOR_PORT`: `3000` (This should only be a number, not a full address. OpenRouter PKCE OAuth only works on port **3000** or **443** unless `OPENROUTER_CALLBACK_URL` is set.)
+- `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
+- `OPENROUTER_MODEL`: `openai/gpt-4o-mini` (model used by the in-app assistant)
+- `OPENROUTER_CALLBACK_URL`: Nothing (defaults to the editor origin + `/auth/openrouter/callback`). OpenRouter OAuth callbacks must use port **443** or **3000** — if you change `EDITOR_PORT`, set this explicitly or the server will log a warning at startup.
+- `OPENROUTER_HTTP_REFERER`: Nothing (defaults to the editor origin; sent to OpenRouter for app identification)
+
+#### In-app assistant
+
+The editor includes a chat assistant (chat icon in the header) powered by [OpenRouter](https://openrouter.ai/). Connect your OpenRouter account from the chat panel using OAuth PKCE; the API key is stored in an httpOnly cookie and used to proxy chat requests server-side.
+
+The assistant can list, create, update, and analyze flags using the same operations as the [MCP server](#mcp-server). Prefer an external AI agent? See the MCP docs for connecting from Cursor, Claude Desktop, and other MCP clients.
+
+Chat history is stored locally in your browser. Use **Clear** in the chat panel to wipe it.
 
 #### Editor Examples
 
@@ -491,7 +502,7 @@ services:
             - internal
             - external
         ports:
-            - "8081:8080"
+            - "8081:3000"
         environment:
             - MONGODB_ENDPOINT=mongodb://mongodb:27017
             - MONGODB_DATABASE=some_database
@@ -532,13 +543,13 @@ docker run -p 8080:8080 -e MONGODB_ENDPOINT=<your_mongodb_endpoint> lidtop/mongo
 
 The default values if no environment variables are set are:
 
--   `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
--   `MONGODB_DATABASE`: `feature_flags`
--   `MONGODB_COLLECTION`: `feature_flags`
--   `MONGODB_DOCUMENT_ID`: Nothing (uses multi-document mode). Specifying a document ID will use single-document mode
--   `MCP_SERVE`: `stdio` (allowed values are: `http` | `sse` | `stdio`)
--   `MCP_PORT`: `8080` (This should only be a number, not a full address. Only applicable to `http` and `sse` serving modes.)
--   `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
+- `MONGODB_ENDPOINT`: Nothing. Will crash unless set or `USE_TESTCONTAINER` is set to `true`.
+- `MONGODB_DATABASE`: `feature_flags`
+- `MONGODB_COLLECTION`: `feature_flags`
+- `MONGODB_DOCUMENT_ID`: Nothing (uses multi-document mode). Specifying a document ID will use single-document mode
+- `MCP_SERVE`: `stdio` (allowed values are: `http` | `sse` | `stdio`)
+- `MCP_PORT`: `8080` (This should only be a number, not a full address. Only applicable to `http` and `sse` serving modes.)
+- `USE_TESTCONTAINER`: `false` (if set to `true`, it will use a testcontainer MongoDB instance for testing purposes. This cannot be used within a Docker container.)
 
 ### AI Usage
 
